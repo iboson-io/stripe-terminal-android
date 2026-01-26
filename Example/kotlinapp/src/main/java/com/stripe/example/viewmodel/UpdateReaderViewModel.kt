@@ -89,14 +89,14 @@ constructor(application: Application) : AndroidViewModel(application) {
         checkForUpdateDescriptionText.addSource(progress, checkForUpdateDescriptionTextLambda)
 
         val doneButtonVisibilityLambda = Observer<Boolean> {
-            doneButtonVisibility.value = getDoneButtonVisibility()
+            doneButtonVisibility.value = computeDoneButtonVisibility()
         }
         doneButtonVisibility.addSource(hasFinishedInstallingUpdate, doneButtonVisibilityLambda)
         doneButtonVisibility.addSource(hasStartedFetchingUpdate, doneButtonVisibilityLambda)
         doneButtonVisibility.addSource(hasFinishedFetchingUpdate, doneButtonVisibilityLambda)
         doneButtonVisibility.addSource(hasStartedInstallingUpdate, doneButtonVisibilityLambda)
         doneButtonVisibility.addSource(readerSoftwareUpdate) {
-            doneButtonVisibility.value = getDoneButtonVisibility()
+            doneButtonVisibility.value = computeDoneButtonVisibility()
         }
     }
 
@@ -162,7 +162,7 @@ constructor(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun getDoneButtonVisibility(): Boolean {
+    private fun computeDoneButtonVisibility(): Boolean {
         return hasFinishedInstallingUpdate.value!! || (
             hasStartedFetchingUpdate.value!! &&
                 hasFinishedFetchingUpdate.value!! && !hasStartedInstallingUpdate.value!! &&

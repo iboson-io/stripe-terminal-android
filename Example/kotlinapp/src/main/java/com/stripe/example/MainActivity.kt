@@ -2,7 +2,9 @@ package com.stripe.example
 
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
@@ -46,6 +48,39 @@ class MainActivity :
     InternetReaderListener,
     LocationSelectionController {
 
+    companion object {
+        private const val TAG = "MainActivity"
+        
+        // Deep link data
+        var deepLinkAmount: Long? = null
+        var deepLinkAmountDisplay: String? = null
+        var deepLinkCurrency: String = "USD"
+        var deepLinkCustomerId: String? = null
+        var deepLinkOrderId: String? = null
+        var deepLinkLocationId: String? = null
+        var deepLinkEmail: String? = null
+        var deepLinkId: String? = null
+        var deepLinkAdminUserId: String? = null
+        var deepLinkWashType: String? = null
+        var deepLinkPackageId: String? = null
+        var deepLinkVehicleId: String? = null
+        
+        fun clearDeepLinkData() {
+            deepLinkAmount = null
+            deepLinkAmountDisplay = null
+            deepLinkCurrency = "USD"
+            deepLinkCustomerId = null
+            deepLinkOrderId = null
+            deepLinkLocationId = null
+            deepLinkEmail = null
+            deepLinkId = null
+            deepLinkAdminUserId = null
+            deepLinkWashType = null
+            deepLinkPackageId = null
+            deepLinkVehicleId = null
+        }
+    }
+
     /**
      * Upon starting, we should verify we have the permissions we need, then start the app
      */
@@ -53,6 +88,9 @@ class MainActivity :
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_main)
+
+        // Parse deep link first
+        handleDeepLink(intent)
 
         if (
             ContextCompat.checkSelfPermission(
@@ -66,10 +104,84 @@ class MainActivity :
                 }
             }
         } else {
-            Log.w(MainActivity::class.java.simpleName, "Failed to acquire Bluetooth permission")
+            Log.w(TAG, "Failed to acquire Bluetooth permission")
         }
 
         initialize()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleDeepLink(intent)
+        
+        // If deep link was received, refresh the current fragment
+        // The payment flow will use the deep link data
+        if (deepLinkAmount != null) {
+            Log.d(TAG, "Deep link received, amount: $deepLinkAmountDisplay, currency: $deepLinkCurrency")
+            // If reader is already connected, navigate to payment screen
+            if (Terminal.getInstance().connectionStatus == ConnectionStatus.CONNECTED) {
+                navigateTo(PaymentFragment.TAG, PaymentFragment())
+            }
+        }
+    }
+
+    private fun handleDeepLink(intent: Intent?) {
+        try {
+            val data: Uri = intent?.data ?: return
+            Log.d(TAG, "Deep link: $data")
+
+            val amountParam = data.getQueryParameter("amount")
+            if (amountParam.isNullOrEmpty()) {
+                Log.e(TAG, "Deep link missing required 'amount' parameter")
+                return
+            }
+            
+            val currencyParam = data.getQueryParameter("currency") ?: "USD"
+
+            // Extract metadata parameters
+            val customerId = data.getQueryParameter("customerId")
+            val orderId = data.getQueryParameter("orderId") ?: data.getQueryParameter("order_id")
+            val locationId = data.getQueryParameter("locationId")
+            val email = data.getQueryParameter("email")
+            val id = data.getQueryParameter("id")
+            val adminUserId = data.getQueryParameter("admin_user_id")
+            val washType = data.getQueryParameter("wash_type")
+            val packageId = data.getQueryParameter("package_id")
+            val vehicleId = data.getQueryParameter("vehicle_id")
+
+            try {
+                val amountDecimal = amountParam.toDouble()
+                if (amountDecimal <= 0) {
+                    Log.e(TAG, "Invalid amount: must be greater than 0")
+                    return
+                }
+                val amountInCents = (amountDecimal * 100).toLong()
+                
+                deepLinkAmount = amountInCents
+                deepLinkAmountDisplay = amountParam
+                deepLinkCurrency = currencyParam.uppercase()
+                deepLinkCustomerId = customerId
+                deepLinkOrderId = orderId
+                deepLinkLocationId = locationId
+                deepLinkEmail = email
+                deepLinkId = id
+                deepLinkAdminUserId = adminUserId
+                deepLinkWashType = washType
+                deepLinkPackageId = packageId
+                deepLinkVehicleId = vehicleId
+
+                Log.d(TAG, "Amount: $amountParam ($amountInCents cents), Currency: $deepLinkCurrency")
+                Log.d(TAG, "CustomerId: $customerId, OrderId: $orderId, LocationId: $locationId, Email: $email, Id: $id")
+                Log.d(TAG, "AdminUserId: $adminUserId, WashType: $washType, PackageId: $packageId, VehicleId: $vehicleId")
+            } catch (e: NumberFormatException) {
+                Log.e(TAG, "Invalid amount format: $amountParam", e)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error parsing amount: $amountParam", e)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error handling deep link", e)
+        }
     }
 
     // Navigation callbacks
@@ -224,6 +336,11 @@ class MainActivity :
      */
     override fun onConnectReader() {
         navigateTo(ConnectedReaderFragment.TAG, ConnectedReaderFragment())
+        
+        // If deep link exists, auto-navigate to payment screen
+        if (deepLinkAmount != null) {
+            navigateTo(PaymentFragment.TAG, PaymentFragment())
+        }
     }
 
     override fun onDisconnectReader() {
@@ -296,15 +413,15 @@ class MainActivity :
     }
 
     override fun onReaderReconnectStarted(reader: Reader, cancelReconnect: Cancelable, reason: DisconnectReason) {
-        Log.d("MainActivity", "Reconnection to reader ${reader.id} started!")
+        Log.d(TAG, "Reconnection to reader ${reader.id} started!")
     }
 
     override fun onReaderReconnectSucceeded(reader: Reader) {
-        Log.d("MainActivity", "Reader ${reader.id} reconnected successfully")
+        Log.d(TAG, "Reader ${reader.id} reconnected successfully")
     }
 
     override fun onReaderReconnectFailed(reader: Reader) {
-        Log.d("MainActivity", "Reconnection to reader ${reader.id} failed!")
+        Log.d(TAG, "Reconnection to reader ${reader.id} failed!")
     }
 
     override fun onDisconnect(reason: DisconnectReason) {

@@ -1,12 +1,15 @@
-package com.stripe.example.network
+﻿package com.stripe.example.network
 
 import com.stripe.example.BuildConfig
+import com.stripe.example.model.PaymentIntentCreationResponse
 import com.stripe.stripeterminal.external.models.ConnectionTokenException
 import okhttp3.OkHttpClient
 import retrofit2.Callback
+import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.IOException
+import java.util.concurrent.TimeUnit
 
 /**
  * The `ApiClient` is a singleton object used to make calls to our backend and return their results
@@ -14,6 +17,9 @@ import java.io.IOException
 object ApiClient {
 
     private val client = OkHttpClient.Builder()
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(30, TimeUnit.SECONDS)
         .build()
     private val retrofit: Retrofit = Retrofit.Builder()
         .baseUrl(BuildConfig.EXAMPLE_BACKEND_URL)
@@ -64,8 +70,8 @@ object ApiClient {
         }
     }
 
-    internal fun capturePaymentIntent(id: String) {
-        service.capturePaymentIntent(id).execute()
+    internal fun capturePaymentIntent(id: String): Response<Void> {
+        return service.capturePaymentIntent(id).execute()
     }
 
     internal fun cancelPaymentIntent(
@@ -73,5 +79,55 @@ object ApiClient {
         callback: Callback<Void>
     ) {
         service.cancelPaymentIntent(id).enqueue(callback)
+    }
+
+    /**
+     * Create a PaymentIntent on the backend with all metadata from deep link.
+     * This is required for M2/Internet readers.
+     * The backend creates the PaymentIntent and returns the client secret.
+     */
+    internal fun createPaymentIntent(
+        amount: Long,
+        currency: String,
+        extendedAuth: Boolean,
+        incrementalAuth: Boolean,
+        customerId: String?,
+        orderId: String?,
+        locationId: String?,
+        email: String?,
+        id: String?,
+        adminUserId: String?,
+        washType: String?,
+        packageId: String?,
+        vehicleId: String?,
+        callback: Callback<PaymentIntentCreationResponse>
+    ) {
+        val createPaymentIntentParams = buildMap<String, String> {
+            put("amount", amount.toString())
+            put("currency", currency)
+            
+            // Add email as top-level parameter
+            email?.let { put("email", it) }
+
+            if (extendedAuth) {
+                put("payment_method_options[card_present[request_extended_authorization]]", "true")
+            }
+            if (incrementalAuth) {
+                put("payment_method_options[card_present[request_incremental_authorization_support]]", "true")
+            }
+            
+            // Add metadata to payment intent
+            customerId?.let { put("metadata[customer_id]", it) }
+            // Use id value for order_id metadata key
+            id?.let { put("metadata[order_id]", it) }
+            locationId?.let { put("metadata[location_id]", it) }
+            adminUserId?.let { put("metadata[admin_user_id]", it) }
+            washType?.let { put("metadata[wash_type]", it) }
+            packageId?.let { put("metadata[package_id]", it) }
+            vehicleId?.let { put("metadata[vehicle_id]", it) }
+            put("metadata[source]", "m2_reader")
+        }
+
+        service.createPaymentIntent(createPaymentIntentParams).enqueue(callback)
     }
 }

@@ -39,7 +39,7 @@
                     android:paddingEnd="12dp"
                     android:paddingTop="16dp"
                     android:text="@string/cancel"
-                    android:textColor="@{ContextCompat.getColor(context, viewModel.getDoneButtonVisibility ? R.color.colorPrimaryDark : R.color.colorAccent)}"
+                    android:textColor="@{ContextCompat.getColor(context, viewModel.doneButtonVisibility ? R.color.colorPrimaryDark : R.color.colorAccent)}"
                     android:visibility="visible"
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintBottom_toBottomOf="parent"

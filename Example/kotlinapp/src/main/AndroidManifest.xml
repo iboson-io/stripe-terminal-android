@@ -19,10 +19,35 @@
         tools:ignore="GoogleAppIndexingWarning">
         <activity android:name="com.stripe.example.MainActivity"
             android:screenOrientation="fullSensor"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Deep Link Intent Filter -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                
+                <!-- Primary scheme: taptopay://payment?amount=50.00&orderId=ORD123&currency=USD -->
+                <data
+                    android:scheme="taptopay"
+                    android:host="payment" />
+            </intent-filter>
+            
+            <!-- Fallback Deep Link Intent Filter -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                
+                <!-- Fallback scheme: com.stripe.example://payment?amount=50.00&orderId=ORD123&currency=USD -->
+                <data
+                    android:scheme="com.stripe.example"
+                    android:host="payment" />
             </intent-filter>
         </activity>
     </application>

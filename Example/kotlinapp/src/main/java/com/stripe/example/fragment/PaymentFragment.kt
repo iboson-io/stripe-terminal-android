@@ -12,6 +12,7 @@ import android.widget.TextView
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import com.google.android.material.switchmaterial.SwitchMaterial
+import com.stripe.example.MainActivity
 import com.stripe.example.NavigationListener
 import com.stripe.example.R
 import com.stripe.example.model.OfflineBehaviorSelection
@@ -43,9 +44,28 @@ class PaymentFragment : Fragment() {
         val extendedAuthSwitch = view.findViewById<SwitchMaterial>(R.id.extended_auth_switch)
         val incrementalAuthSwitch = view.findViewById<SwitchMaterial>(R.id.incremental_auth_switch)
 
-        amountEditText.doAfterTextChanged { editable ->
-            if (editable.toString().isNotEmpty()) {
-                chargeAmount.text = formatCentsToString(editable.toString().toInt())
+        // Check if deep link data exists
+        val deepLinkAmount = MainActivity.deepLinkAmount
+        val deepLinkAmountDisplay = MainActivity.deepLinkAmountDisplay
+        val deepLinkCurrency = MainActivity.deepLinkCurrency
+
+        if (deepLinkAmount != null && deepLinkAmountDisplay != null) {
+            // Pre-fill amount from deep link
+            amountEditText.text = deepLinkAmount.toString()
+            chargeAmount.text = formatCentsToString(deepLinkAmount.toInt())
+            
+            // Pre-fill currency from deep link
+            currentEditText.setText(deepLinkCurrency.lowercase())
+            
+            // Disable amount editing when deep link exists
+            amountEditText.isEnabled = false
+            amountEditText.isFocusable = false
+        } else {
+            // Normal behavior - allow editing
+            amountEditText.doAfterTextChanged { editable ->
+                if (editable.toString().isNotEmpty()) {
+                    chargeAmount.text = formatCentsToString(editable.toString().toInt())
+                }
             }
         }
 

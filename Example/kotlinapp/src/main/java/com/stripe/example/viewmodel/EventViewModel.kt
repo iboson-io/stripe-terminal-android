@@ -3,9 +3,17 @@ package com.stripe.example.viewmodel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.util.Log
+import com.stripe.example.MainActivity
 import com.stripe.example.TerminalRepository
 import com.stripe.example.model.Event
+import com.stripe.example.model.PaymentIntentCreationResponse
+import com.stripe.example.network.ApiClient
 import com.stripe.stripeterminal.Terminal
+import com.stripe.stripeterminal.ktx.retrievePaymentIntent
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import com.stripe.stripeterminal.external.models.AllowRedisplay
 import com.stripe.stripeterminal.external.models.CollectPaymentIntentConfiguration
 import com.stripe.stripeterminal.external.models.CollectRefundConfiguration
@@ -59,6 +67,19 @@ class EventViewModel(eventsList: List<Event> = mutableListOf()) : ViewModel() {
         collectConfiguration: CollectPaymentIntentConfiguration,
         confirmConfiguration: ConfirmPaymentIntentConfiguration
     ) {
+        // Check if deep link data exists - use backend flow for M2 readers with metadata
+        val deepLinkAmount = MainActivity.deepLinkAmount
+        if (deepLinkAmount != null) {
+            takePaymentWithBackend(
+                amount = deepLinkAmount,
+                currency = MainActivity.deepLinkCurrency.lowercase(),
+                collectConfiguration = collectConfiguration,
+                confirmConfiguration = confirmConfiguration
+            )
+            return
+        }
+        
+        // Standard SDK flow for local mobile/NFC readers
         viewModelScopeSafeLaunch {
             Terminal.getInstance().run {
                 val createdPI = createPaymentIntent(paymentParameters, createConfiguration)
@@ -73,6 +94,130 @@ class EventViewModel(eventsList: List<Event> = mutableListOf()) : ViewModel() {
                 )
                 addEvent(Event("Processed PaymentIntent", "terminal.processPaymentIntent"))
                 TerminalRepository.addPaymentIntent(processedPI)
+                
+                // Auto-capture the payment intent on backend
+                processedPI.id?.let { paymentIntentId ->
+                    try {
+                        val response = ApiClient.capturePaymentIntent(paymentIntentId)
+                        if (response.isSuccessful) {
+                            addEvent(Event("Captured PaymentIntent", "backend.capturePaymentIntent"))
+                        } else {
+                            addEvent(Event("Failed to capture: ${response.code()}", "backend.capturePaymentIntent"))
+                        }
+                    } catch (e: Exception) {
+                        addEvent(Event("Error capturing: ${e.message}", "backend.capturePaymentIntent"))
+                    }
+                }
+            }
+        }.also(jobs::add)
+    }
+
+    /**
+     * Take payment using backend-created PaymentIntent with all deep link metadata.
+     * This flow is required for M2/Internet readers and passes all metadata to Stripe.
+     */
+    private fun takePaymentWithBackend(
+        amount: Long,
+        currency: String,
+        collectConfiguration: CollectPaymentIntentConfiguration,
+        confirmConfiguration: ConfirmPaymentIntentConfiguration
+    ) {
+        addEvent(Event("Creating PaymentIntent on backend...", "backend.createPaymentIntent"))
+        
+        // Create PaymentIntent on backend with all metadata from deep link
+        ApiClient.createPaymentIntent(
+            amount = amount,
+            currency = currency,
+            extendedAuth = false,
+            incrementalAuth = false,
+            customerId = MainActivity.deepLinkCustomerId,
+            orderId = MainActivity.deepLinkOrderId,
+            locationId = MainActivity.deepLinkLocationId,
+            email = MainActivity.deepLinkEmail,
+            id = MainActivity.deepLinkId,
+            adminUserId = MainActivity.deepLinkAdminUserId,
+            washType = MainActivity.deepLinkWashType,
+            packageId = MainActivity.deepLinkPackageId,
+            vehicleId = MainActivity.deepLinkVehicleId,
+            callback = object : Callback<PaymentIntentCreationResponse> {
+                override fun onResponse(
+                    call: Call<PaymentIntentCreationResponse>,
+                    response: Response<PaymentIntentCreationResponse>
+                ) {
+                    if (!response.isSuccessful) {
+                        val errorBody = response.errorBody()?.string()
+                        Log.e("EventViewModel", "Backend PI creation failed: ${response.code()} - $errorBody")
+                        addEvent(Event("Failed to create PaymentIntent: ${response.message()}", "backend.createPaymentIntent"))
+                        isComplete.postValue(true)
+                        return
+                    }
+                    
+                    val secret = response.body()?.secret
+                    if (secret.isNullOrEmpty()) {
+                        Log.e("EventViewModel", "PaymentIntent secret is null or empty")
+                        addEvent(Event("Invalid payment response from server", "backend.createPaymentIntent"))
+                        isComplete.postValue(true)
+                        return
+                    }
+                    
+                    addEvent(Event("PaymentIntent created on backend", "backend.createPaymentIntent"))
+                    
+                    // Retrieve and process the PaymentIntent
+                    retrieveAndProcessPaymentIntent(secret, collectConfiguration, confirmConfiguration)
+                }
+                
+                override fun onFailure(call: Call<PaymentIntentCreationResponse>, t: Throwable) {
+                    Log.e("EventViewModel", "Network error creating PaymentIntent", t)
+                    val errorMessage = when (t) {
+                        is java.net.UnknownHostException -> "No internet connection"
+                        is java.net.SocketTimeoutException -> "Connection timeout"
+                        is java.io.IOException -> "Network error"
+                        else -> t.message ?: "Unknown error"
+                    }
+                    addEvent(Event("Network error: $errorMessage", "backend.createPaymentIntent"))
+                    isComplete.postValue(true)
+                }
+            }
+        )
+    }
+    
+    private fun retrieveAndProcessPaymentIntent(
+        clientSecret: String,
+        collectConfiguration: CollectPaymentIntentConfiguration,
+        confirmConfiguration: ConfirmPaymentIntentConfiguration
+    ) {
+        viewModelScopeSafeLaunch {
+            Terminal.getInstance().run {
+                // Retrieve the PaymentIntent using the client secret from backend
+                val retrievedPI = retrievePaymentIntent(clientSecret)
+                addEvent(Event("Retrieved PaymentIntent", "terminal.retrievePaymentIntent"))
+                TerminalRepository.addPaymentIntent(retrievedPI)
+                
+                // Process the payment (collect and confirm)
+                val processedPI = processPaymentIntent(
+                    intent = retrievedPI,
+                    collectConfig = collectConfiguration,
+                    confirmConfig = confirmConfiguration
+                )
+                addEvent(Event("Processed PaymentIntent", "terminal.processPaymentIntent"))
+                TerminalRepository.addPaymentIntent(processedPI)
+                
+                // Auto-capture the payment intent on backend
+                processedPI.id?.let { paymentIntentId ->
+                    try {
+                        val captureResponse = ApiClient.capturePaymentIntent(paymentIntentId)
+                        if (captureResponse.isSuccessful) {
+                            addEvent(Event("Captured PaymentIntent", "backend.capturePaymentIntent"))
+                        } else {
+                            addEvent(Event("Failed to capture: ${captureResponse.code()}", "backend.capturePaymentIntent"))
+                        }
+                    } catch (e: Exception) {
+                        addEvent(Event("Error capturing: ${e.message}", "backend.capturePaymentIntent"))
+                    }
+                }
+                
+                // Clear deep link data after successful payment
+                MainActivity.clearDeepLinkData()
             }
         }.also(jobs::add)
     }

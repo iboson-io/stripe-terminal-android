@@ -216,6 +216,9 @@ class EventFragment : Fragment(), MobileReaderListener {
         }
 
         binding.doneButton.setOnClickListener {
+            // Clear deep link data after payment completion
+            com.stripe.example.MainActivity.clearDeepLinkData()
+            
             activityRef.get()?.let {
                 if (it is NavigationListener) {
                     it.runOnUiThread {
