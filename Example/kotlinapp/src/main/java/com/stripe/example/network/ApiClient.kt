@@ -1,6 +1,8 @@
 ﻿package com.stripe.example.network
 
+import android.util.Log
 import com.stripe.example.BuildConfig
+import com.stripe.example.MainActivity
 import com.stripe.example.model.PaymentIntentCreationResponse
 import com.stripe.stripeterminal.external.models.ConnectionTokenException
 import okhttp3.OkHttpClient
@@ -15,6 +17,8 @@ import java.util.concurrent.TimeUnit
  * The `ApiClient` is a singleton object used to make calls to our backend and return their results
  */
 object ApiClient {
+
+    private const val TAG = "ApiClient"
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
@@ -70,8 +74,25 @@ object ApiClient {
         }
     }
 
-    internal fun capturePaymentIntent(id: String): Response<Void> {
-        return service.capturePaymentIntent(id).execute()
+    internal fun capturePaymentIntent(id: String) {
+        try {
+            if (id.isEmpty()) {
+                Log.e(TAG, "Cannot capture payment intent: ID is empty")
+                return
+            }
+            
+            val result = service.capturePaymentIntent(id).execute()
+            if (!result.isSuccessful) {
+                val errorBody = result.errorBody()?.string()
+                Log.e(TAG, "Failed to capture payment intent: ${result.code()} - ${result.message()} - $errorBody")
+            } else {
+                Log.d(TAG, "Payment intent captured successfully: $id")
+            }
+        } catch (e: IOException) {
+            Log.e(TAG, "Network error capturing payment intent", e)
+        } catch (e: Exception) {
+            Log.e(TAG, "Unexpected error capturing payment intent", e)
+        }
     }
 
     internal fun cancelPaymentIntent(
@@ -125,9 +146,10 @@ object ApiClient {
             washType?.let { put("metadata[wash_type]", it) }
             packageId?.let { put("metadata[package_id]", it) }
             vehicleId?.let { put("metadata[vehicle_id]", it) }
-            put("metadata[source]", "m2_reader")
+            put("metadata[source]", "saas")
         }
 
+        Log.d(TAG, "Creating PaymentIntent with params: $createPaymentIntentParams")
         service.createPaymentIntent(createPaymentIntentParams).enqueue(callback)
     }
 }

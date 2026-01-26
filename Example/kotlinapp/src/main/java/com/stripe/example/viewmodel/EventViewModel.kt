@@ -98,12 +98,8 @@ class EventViewModel(eventsList: List<Event> = mutableListOf()) : ViewModel() {
                 // Auto-capture the payment intent on backend
                 processedPI.id?.let { paymentIntentId ->
                     try {
-                        val response = ApiClient.capturePaymentIntent(paymentIntentId)
-                        if (response.isSuccessful) {
-                            addEvent(Event("Captured PaymentIntent", "backend.capturePaymentIntent"))
-                        } else {
-                            addEvent(Event("Failed to capture: ${response.code()}", "backend.capturePaymentIntent"))
-                        }
+                        ApiClient.capturePaymentIntent(paymentIntentId)
+                        addEvent(Event("Captured PaymentIntent", "backend.capturePaymentIntent"))
                     } catch (e: Exception) {
                         addEvent(Event("Error capturing: ${e.message}", "backend.capturePaymentIntent"))
                     }
@@ -205,12 +201,8 @@ class EventViewModel(eventsList: List<Event> = mutableListOf()) : ViewModel() {
                 // Auto-capture the payment intent on backend
                 processedPI.id?.let { paymentIntentId ->
                     try {
-                        val captureResponse = ApiClient.capturePaymentIntent(paymentIntentId)
-                        if (captureResponse.isSuccessful) {
-                            addEvent(Event("Captured PaymentIntent", "backend.capturePaymentIntent"))
-                        } else {
-                            addEvent(Event("Failed to capture: ${captureResponse.code()}", "backend.capturePaymentIntent"))
-                        }
+                        ApiClient.capturePaymentIntent(paymentIntentId)
+                        addEvent(Event("Captured PaymentIntent", "backend.capturePaymentIntent"))
                     } catch (e: Exception) {
                         addEvent(Event("Error capturing: ${e.message}", "backend.capturePaymentIntent"))
                     }
