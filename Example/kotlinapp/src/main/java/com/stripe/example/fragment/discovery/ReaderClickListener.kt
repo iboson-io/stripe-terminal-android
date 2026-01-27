@@ -22,8 +22,10 @@ class ReaderClickListener(
     private val viewModel: DiscoveryViewModel
 ) {
     fun onClick(reader: Reader) {
-        val connectLocationId = viewModel.selectedLocation.value?.id ?: reader.location?.id
+        // For M2 readers, use the reader's existing location (they should already be registered to a location)
+        val connectLocationId = reader.location?.id
 
+        // For M2 readers, location should already be set. Only show error if truly missing.
         if (connectLocationId == null) {
             AlertDialog.Builder(activity)
                 .setPositiveButton(R.string.alert_acknowledge_button) { _, _ -> }
@@ -39,9 +41,6 @@ class ReaderClickListener(
                     locationId = connectLocationId,
                     bluetoothReaderListener = activity,
                 )
-
-            DiscoveryMethod.INTERNET ->
-                ConnectionConfiguration.InternetConnectionConfiguration(internetReaderListener = activity)
 
             DiscoveryMethod.TAP_TO_PAY ->
                 ConnectionConfiguration.TapToPayConnectionConfiguration(

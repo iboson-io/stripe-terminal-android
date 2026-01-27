@@ -19,7 +19,6 @@ import com.stripe.example.NavigationListener
 import com.stripe.example.R
 import com.stripe.example.databinding.FragmentDiscoveryBinding
 import com.stripe.example.fragment.launchAndRepeatWithViewLifecycle
-import com.stripe.example.fragment.location.LocationSelectionController
 import com.stripe.example.viewmodel.DiscoveryViewModel
 import com.stripe.stripeterminal.external.callable.Cancelable
 import com.stripe.stripeterminal.external.callable.MobileReaderListener
@@ -33,8 +32,7 @@ import com.stripe.stripeterminal.external.models.TerminalException
  */
 class DiscoveryFragment :
     Fragment(R.layout.fragment_discovery),
-    MobileReaderListener,
-    LocationSelectionController {
+    MobileReaderListener {
 
     // Register the permissions callback to handles the response to the system permissions dialog.
     private val requestPermissionLauncher = registerForActivityResult(
@@ -93,14 +91,6 @@ class DiscoveryFragment :
         launchAndRepeatWithViewLifecycle {
             startDiscovery()
         }
-
-        viewModel.selectedLocation.observe(viewLifecycleOwner) { location ->
-            adapter.updateLocationSelection(location)
-
-            if (location != null) {
-                startDiscovery()
-            }
-        }
     }
 
     override fun onDestroyView() {
@@ -110,13 +100,6 @@ class DiscoveryFragment :
         viewModel.stopDiscovery()
     }
 
-    override fun onLocationSelected(location: Location) {
-        viewModel.selectedLocation.value = location
-    }
-
-    override fun onLocationCleared() {
-        viewModel.selectedLocation.value = null
-    }
 
     override fun onStartInstallingUpdate(update: ReaderSoftwareUpdate, cancelable: Cancelable?) {
         Log.d("DiscoveryFragment", "onStartInstallingUpdate")

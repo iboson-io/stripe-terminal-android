@@ -22,19 +22,9 @@ class ReaderHolder(
         binding.listItemCardTitle.text = reader.serialNumber
             ?: reader.id
             ?: resources.getString(R.string.discovery_reader_unknown)
-        binding.listItemCardDescription.text = when {
-            locationSelection == null && reader.location == null -> resources.getString(
-                R.string.discovery_reader_location_unavailable
-            )
-            locationSelection == null -> resources.getString(
-                R.string.discovery_reader_location_last,
-                reader.location!!.displayName
-            )
-            else -> resources.getString(
-                R.string.discovery_reader_location,
-                locationSelection.displayName
-            )
-        }
+        // For M2 readers, show their registered location (should already be set)
+        binding.listItemCardDescription.text = reader.location?.displayName
+            ?: resources.getString(R.string.discovery_reader_location_unavailable)
         binding.listItemCard.setOnClickListener {
             clickListener.onClick(reader)
         }

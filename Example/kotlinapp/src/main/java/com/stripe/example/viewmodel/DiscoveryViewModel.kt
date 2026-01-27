@@ -8,7 +8,6 @@ import androidx.lifecycle.viewModelScope
 import com.stripe.example.NavigationListener
 import com.stripe.example.fragment.discovery.DiscoveryMethod
 import com.stripe.example.fragment.discovery.DiscoveryMethod.BLUETOOTH_SCAN
-import com.stripe.example.fragment.discovery.DiscoveryMethod.INTERNET
 import com.stripe.example.fragment.discovery.DiscoveryMethod.TAP_TO_PAY
 import com.stripe.example.fragment.discovery.DiscoveryMethod.USB
 import com.stripe.example.fragment.discovery.ReaderClickListener
@@ -33,28 +32,19 @@ class DiscoveryViewModel(
     val isConnecting: MutableLiveData<Boolean> = MutableLiveData(false)
     val isUpdating: MutableLiveData<Boolean> = MutableLiveData(false)
     val updateProgress: MutableLiveData<Float> = MutableLiveData(0F)
-    val selectedLocation = MutableLiveData<Location?>(null)
+    // Removed selectedLocation - M2 readers should already have location assigned when discovered
 
     var discoveryTask: Cancelable? = null
     var readerClickListener: ReaderClickListener? = null
     var navigationListener: NavigationListener? = null
 
-    private var isRequestingChangeLocation: Boolean = false
-
-    fun requestChangeLocation() {
-        isRequestingChangeLocation = true
-        stopDiscovery {
-            navigationListener?.onRequestLocationSelection()
-        }
-    }
+    // Removed location selection functionality for M2 readers
+    // private var isRequestingChangeLocation: Boolean = false
+    // fun requestChangeLocation() { ... }
 
     private val discoveryConfig: DiscoveryConfiguration
         get() = when (discoveryMethod) {
             BLUETOOTH_SCAN -> DiscoveryConfiguration.BluetoothDiscoveryConfiguration(0, isSimulated)
-            INTERNET -> DiscoveryConfiguration.InternetDiscoveryConfiguration(
-                location = selectedLocation.value?.id,
-                isSimulated = isSimulated,
-            )
             TAP_TO_PAY -> DiscoveryConfiguration.TapToPayDiscoveryConfiguration(isSimulated)
             USB -> DiscoveryConfiguration.UsbDiscoveryConfiguration(0, isSimulated)
         }

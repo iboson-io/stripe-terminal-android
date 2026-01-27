@@ -18,16 +18,12 @@ import com.stripe.example.fragment.admin.LedgerFragment
 import com.stripe.example.fragment.discovery.DiscoveryFragment
 import com.stripe.example.fragment.discovery.DiscoveryMethod
 import com.stripe.example.fragment.event.EventFragment
-import com.stripe.example.fragment.location.LocationCreateFragment
-import com.stripe.example.fragment.location.LocationSelectionController
-import com.stripe.example.fragment.location.LocationSelectionFragment
 import com.stripe.example.fragment.offline.OfflinePaymentsLogFragment
 import com.stripe.example.model.OfflineBehaviorSelection
 import com.stripe.example.network.TokenProvider
 import com.stripe.stripeterminal.Terminal
 import com.stripe.stripeterminal.external.OfflineMode
 import com.stripe.stripeterminal.external.callable.Cancelable
-import com.stripe.stripeterminal.external.callable.InternetReaderListener
 import com.stripe.stripeterminal.external.callable.MobileReaderListener
 import com.stripe.stripeterminal.external.callable.TapToPayReaderListener
 import com.stripe.stripeterminal.external.models.ConnectionStatus
@@ -44,9 +40,7 @@ class MainActivity :
     AppCompatActivity(),
     NavigationListener,
     MobileReaderListener,
-    TapToPayReaderListener,
-    InternetReaderListener,
-    LocationSelectionController {
+    TapToPayReaderListener {
 
     companion object {
         private const val TAG = "MainActivity"
@@ -193,40 +187,25 @@ class MainActivity :
         navigateTo(TerminalFragment.TAG, TerminalFragment())
     }
 
+    // Location selection removed - M2 readers should already have location assigned
     override fun onRequestLocationSelection() {
-        navigateTo(
-            LocationSelectionFragment.TAG,
-            LocationSelectionFragment.newInstance(),
-            replace = false,
-            addToBackStack = true,
-        )
+        // No-op: Location selection not needed for M2 readers
     }
 
-    /**
-     * Callback function called to exit the change location flow
-     */
     override fun onCancelLocationSelection() {
-        supportFragmentManager.popBackStackImmediate()
+        // No-op: Location selection not needed for M2 readers
     }
 
     override fun onRequestCreateLocation() {
-        navigateTo(
-            LocationCreateFragment.TAG,
-            LocationCreateFragment.newInstance(),
-            replace = false,
-            addToBackStack = true,
-        )
+        // No-op: Location creation not needed for M2 readers
     }
 
-    /**
-     * Callback function called to exit the create location flow
-     */
     override fun onCancelCreateLocation() {
-        supportFragmentManager.popBackStackImmediate()
+        // No-op: Location creation not needed for M2 readers
     }
 
     override fun onLocationCreated() {
-        supportFragmentManager.popBackStackImmediate()
+        // No-op: Location creation not needed for M2 readers
     }
 
     /**
@@ -402,15 +381,6 @@ class MainActivity :
         }
     }
 
-    override fun onLocationSelected(location: Location) {
-        supportFragmentManager.popBackStackImmediate()
-        (supportFragmentManager.fragments.last() as? LocationSelectionController)?.onLocationSelected(location)
-    }
-
-    override fun onLocationCleared() {
-        supportFragmentManager.popBackStackImmediate()
-        (supportFragmentManager.fragments.last() as? LocationSelectionController)?.onLocationCleared()
-    }
 
     override fun onReaderReconnectStarted(reader: Reader, cancelReconnect: Cancelable, reason: DisconnectReason) {
         Log.d(TAG, "Reconnection to reader ${reader.id} started!")

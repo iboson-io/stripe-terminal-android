@@ -51,36 +51,6 @@
         </com.google.android.material.appbar.AppBarLayout>
 
         <TextView
-            android:id="@+id/select_reader_label"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="16dp"
-            android:textAllCaps="true"
-            app:layout_constraintTop_toBottomOf="@id/app_bar"
-            android:text="@string/select_location" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/current_location"
-            style="@style/Widget.Example.Button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:layout_constraintTop_toBottomOf="@id/select_reader_label"
-            android:onClick="@{() -> viewModel.requestChangeLocation()}"
-            android:text="@{viewModel.selectedLocation == null ? @string/select_location_last : viewModel.selectedLocation.displayName}"
-            app:cornerRadius="0dp"
-            android:drawableEnd="@drawable/ic_right_arrow"
-            android:textAlignment="textStart" />
-
-        <TextView
-            android:id="@+id/location_caption"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            app:layout_constraintTop_toBottomOf="@id/current_location"
-            android:text="@string/discovery_location_caption" />
-
-        <TextView
             android:id="@+id/reader_description"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -94,7 +64,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/location_caption"
+            app:layout_constraintTop_toBottomOf="@id/app_bar"
             tools:ignore="UseCompatTextViewDrawableXml" />
 
         <TextView
@@ -110,7 +80,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/location_caption"
+            app:layout_constraintTop_toBottomOf="@id/app_bar"
             tools:ignore="UseCompatTextViewDrawableXml" />
 
         <TextView
@@ -134,7 +104,7 @@
             android:visibility="@{(viewModel.isConnecting || viewModel.isUpdating) ? View.GONE : View.VISIBLE}"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/location_caption"
+            app:layout_constraintTop_toBottomOf="@id/app_bar"
             app:layout_constraintBottom_toTopOf="@id/reader_recycler_view">
 
             <TextView

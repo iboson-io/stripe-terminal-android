@@ -110,7 +110,7 @@ class EventViewModel(eventsList: List<Event> = mutableListOf()) : ViewModel() {
 
     /**
      * Take payment using backend-created PaymentIntent with all deep link metadata.
-     * This flow is required for M2/Internet readers and passes all metadata to Stripe.
+     * This flow passes all metadata to Stripe.
      */
     private fun takePaymentWithBackend(
         amount: Long,

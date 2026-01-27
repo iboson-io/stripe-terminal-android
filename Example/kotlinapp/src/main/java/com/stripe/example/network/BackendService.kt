@@ -50,7 +50,7 @@ interface BackendService {
 
     /**
      * Create a PaymentIntent on backend with all metadata
-     * For M2/Internet readers, PaymentIntent must be created on backend
+     * PaymentIntent must be created on backend
      * https://stripe.com/docs/terminal/payments/collect-payment?terminal-sdk-platform=android#create-payment
      */
     @FormUrlEncoded

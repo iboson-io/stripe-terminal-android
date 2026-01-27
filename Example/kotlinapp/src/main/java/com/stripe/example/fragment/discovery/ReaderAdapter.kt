@@ -26,15 +26,9 @@ class ReaderAdapter(
     private val inflater: LayoutInflater,
 ) : RecyclerView.Adapter<ReaderHolder>() {
     private var readers: List<Reader> = viewModel.readers.value ?: listOf()
-    private var locationSelection: Location? = null
 
     fun updateReaders(readers: List<Reader>) {
         this.readers = readers
-        notifyDataSetChanged()
-    }
-
-    fun updateLocationSelection(location: Location?) {
-        locationSelection = location
         notifyDataSetChanged()
     }
 
@@ -43,7 +37,7 @@ class ReaderAdapter(
     }
 
     override fun onBindViewHolder(holder: ReaderHolder, position: Int) {
-        holder.bind(readers[position], locationSelection)
+        holder.bind(readers[position], null)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReaderHolder {

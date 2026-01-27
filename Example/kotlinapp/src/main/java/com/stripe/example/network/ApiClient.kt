@@ -104,7 +104,6 @@ object ApiClient {
 
     /**
      * Create a PaymentIntent on the backend with all metadata from deep link.
-     * This is required for M2/Internet readers.
      * The backend creates the PaymentIntent and returns the client secret.
      */
     internal fun createPaymentIntent(
