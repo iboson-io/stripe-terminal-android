@@ -9,6 +9,7 @@ import androidx.core.content.edit
 import androidx.core.os.BundleCompat
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
+import com.stripe.example.MainActivity
 import com.stripe.example.NavigationListener
 import com.stripe.example.R
 import com.stripe.example.databinding.FragmentTerminalBinding
@@ -97,6 +98,11 @@ class TerminalFragment : Fragment(R.layout.fragment_terminal) {
                 viewModel.simulated,
                 viewModel.discoveryMethod,
             )
+        }
+
+        // Link up the open car wash button
+        viewBinding.openCarwashButton.setOnClickListener {
+            (activity as? MainActivity)?.openUrlInCustomTab("https://carwash.way.com")
         }
     }
 

@@ -127,6 +127,17 @@
                     android:paddingBottom="16dp"
                     android:text="@string/simulation_explanation" />
 
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/open_carwash_button"
+                    style="@style/Widget.Example.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    app:cornerRadius="0dp"
+                    android:textAlignment="textStart"
+                    android:text="Open Car Wash"
+                    android:textColor="@color/colorAccent" />
+
             </LinearLayout>
 
         </ScrollView>

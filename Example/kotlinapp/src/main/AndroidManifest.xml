@@ -50,6 +50,17 @@
                     android:host="payment" />
             </intent-filter>
         </activity>
+        
+        <activity android:name="com.stripe.example.CarWashActivity"
+            android:screenOrientation="fullSensor"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:label="@string/car_wash_app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

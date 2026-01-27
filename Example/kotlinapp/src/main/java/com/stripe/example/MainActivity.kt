@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.stripe.example.fragment.ConnectedReaderFragment
@@ -479,5 +480,25 @@ class MainActivity :
                 }
             }
             .commitAllowingStateLoss()
+    }
+
+    /**
+     * Open URL in Chrome Custom Tabs
+     */
+    fun openUrlInCustomTab(url: String) {
+        try {
+            val builder = CustomTabsIntent.Builder()
+            builder.setShowTitle(true)
+            builder.setStartAnimations(this, android.R.anim.fade_in, android.R.anim.fade_out)
+            builder.setExitAnimations(this, android.R.anim.fade_in, android.R.anim.fade_out)
+            
+            val customTabsIntent = builder.build()
+            customTabsIntent.launchUrl(this, Uri.parse(url))
+        } catch (e: Exception) {
+            Log.e(TAG, "Error opening URL in custom tab: $url", e)
+            // Fallback to regular browser intent
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            startActivity(intent)
+        }
     }
 }

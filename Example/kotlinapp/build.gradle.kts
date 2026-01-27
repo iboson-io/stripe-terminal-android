@@ -85,6 +85,10 @@ dependencies {
     implementation("com.stripe:stripeterminal-taptopay:$stripeTerminalVersion")
     implementation("com.stripe:stripeterminal-core:$stripeTerminalVersion")
     implementation("com.stripe:stripeterminal-ktx:$stripeTerminalVersion")
+    
+    // Chrome Custom Tabs
+    implementation("androidx.browser:browser:1.8.0")
+    
     // Leak canary
     debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
 }
