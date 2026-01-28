@@ -1,6 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Primary Colors - White and Light Gray -->
     <color name="colorPrimary">#FFFFFF</color>
-    <color name="colorPrimaryDark">#EEEEEE</color>
+    <color name="colorPrimaryDark">#F8F8F8</color>
     <color name="colorAccent">#3c91FF</color>
+    
+    <!-- Background Colors -->
+    <color name="backgroundWhite">#FFFFFF</color>
+    <color name="backgroundLightGray">#F8F8F8</color>
+    <color name="backgroundCard">#FFFFFF</color>
+    
+    <!-- Text Colors -->
+    <color name="textPrimary">#1A1A1A</color>
+    <color name="textSecondary">#666666</color>
+    <color name="textTertiary">#999999</color>
+    <color name="textWhite">#FFFFFF</color>
+    
+    <!-- Status/Accent Colors (matching web app) -->
+    <color name="statusGreen">#10B981</color>
+    <color name="statusBlue">#3B82F6</color>
+    <color name="statusPurple">#8B5CF6</color>
+    <color name="statusOrange">#F59E0B</color>
+    
+    <!-- Device/Reader Colors -->
+    <color name="deviceHighlight">#3B82F6</color>
+    <color name="deviceHighlightDark">#2563EB</color>
+    
+    <!-- Legacy colors for compatibility -->
+    <color name="headerBlue">#FFFFFF</color>
+    <color name="textGray">#999999</color>
+    <color name="textDarkGray">#666666</color>
 </resources>

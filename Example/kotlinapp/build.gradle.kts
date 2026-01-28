@@ -92,6 +92,10 @@ dependencies {
     implementation("com.stripe:stripeterminal-taptopay:$stripeTerminalVersion")
     implementation("com.stripe:stripeterminal-core:$stripeTerminalVersion")
     implementation("com.stripe:stripeterminal-ktx:$stripeTerminalVersion")
+    
+    // Lottie animation
+    implementation("com.airbnb.android:lottie:6.1.0")
+    
     // Leak canary
     debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
 }

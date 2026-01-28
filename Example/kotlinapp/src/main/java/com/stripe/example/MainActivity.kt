@@ -188,9 +188,11 @@ class MainActivity :
 
     /**
      * Callback function called when discovery has been canceled by the [DiscoveryFragment]
+     * Removed navigation to terminal page - discovery can be stopped without leaving the screen
      */
     override fun onCancelDiscovery() {
-        navigateTo(TerminalFragment.TAG, TerminalFragment())
+        // No-op: Discovery can be stopped via back arrow without navigation
+        // User can refresh to restart discovery if needed
     }
 
     // Location selection removed - M2 readers should already have location assigned

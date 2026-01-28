@@ -15,6 +15,9 @@
     <string name="default_amount_string">$1.00</string>
     <string name="disconnect">Disconnect</string>
     <string name="discovery">Discovery</string>
+    <string name="classic_scan">Scan Devices</string>
+    <string name="get_list_nearby_devices">Get List of the nearby Devices</string>
+    <string name="pair">Pair</string>
     <string name="discovery_method">DISCOVERY METHOD</string>
     <string name="discover_readers">Discover Readers</string>
     <string name="done">Done</string>
@@ -25,6 +28,7 @@
     <string name="installation_in_progress">The reader will temporarily become unresponsive. Do not leave this page, and keep the reader in range and powered on until the update is complete.</string>
     <string name="nearby_readers">NEARBY READERS</string>
     <string name="no_reader">No reader connected</string>
+    <string name="connected_status">Connected</string>
     <string name="no_update_available">No update available</string>
     <string name="reader">Reader</string>
     <string name="reader_connection">READER CONNECTION</string>
@@ -99,4 +103,5 @@
     <string name="payment_complete">Payment Complete</string>
     <string name="payment_complete_message">Payment has been processed successfully. You can now return to the web app.</string>
     <string name="refresh">Refresh</string>
+    <string name="please_tap_your_card">Please tap your card</string>
 </resources>

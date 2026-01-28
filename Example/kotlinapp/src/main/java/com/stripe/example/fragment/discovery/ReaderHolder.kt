@@ -1,6 +1,8 @@
 package com.stripe.example.fragment.discovery
 
 import android.view.View
+import androidx.cardview.widget.CardView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.stripe.example.R
 import com.stripe.example.databinding.ListItemCardBinding
@@ -17,21 +19,44 @@ class ReaderHolder(
 ) : RecyclerView.ViewHolder(parent) {
     private val binding = ListItemCardBinding.bind(parent)
     private val resources = parent.resources
+    private val context = parent.context
 
     fun bind(reader: Reader, locationSelection: Location?, isConnecting: Boolean) {
-        binding.listItemCardTitle.text = reader.serialNumber
+        val readerIdentifier = reader.serialNumber
             ?: reader.id
             ?: resources.getString(R.string.discovery_reader_unknown)
-        // For M2 readers, location will be set from gradle.properties during connection
-        // Show reader's location if available, otherwise show device type
-        binding.listItemCardDescription.text = reader.location?.displayName
+        
+        // Set device name (reader serial number or ID)
+        binding.listItemCardTitle.text = readerIdentifier
+        
+        // Set device ID (location or device type)
+        val deviceInfo = reader.location?.displayName
             ?: reader.deviceType?.toString()
             ?: ""
+        binding.listItemCardDescription.text = deviceInfo
         
-        // Show/hide spinner based on connecting state
-        binding.listItemCardSpinner.visibility = if (isConnecting) View.VISIBLE else View.GONE
+        // Handle connecting state
+        val cardView = binding.listItemCard as CardView
         
-        // Disable click when connecting
+        if (isConnecting) {
+            // Connecting state - keep white background, show loader
+            cardView.setCardBackgroundColor(ContextCompat.getColor(context, R.color.backgroundWhite))
+            binding.listItemCardTitle.setTextColor(ContextCompat.getColor(context, R.color.textPrimary))
+            binding.listItemCardDescription.setTextColor(ContextCompat.getColor(context, R.color.textTertiary))
+            binding.deviceIcon.setColorFilter(ContextCompat.getColor(context, R.color.textTertiary))
+            // Show the loader spinner
+            binding.listItemCardSpinner.visibility = View.VISIBLE
+        } else {
+            // Normal state - white background
+            cardView.setCardBackgroundColor(ContextCompat.getColor(context, R.color.backgroundWhite))
+            binding.listItemCardTitle.setTextColor(ContextCompat.getColor(context, R.color.textPrimary))
+            binding.listItemCardDescription.setTextColor(ContextCompat.getColor(context, R.color.textTertiary))
+            binding.deviceIcon.setColorFilter(ContextCompat.getColor(context, R.color.textTertiary))
+            // Hide spinner
+            binding.listItemCardSpinner.visibility = View.GONE
+        }
+        
+        // Set click listener on the entire card
         binding.listItemCard.isClickable = !isConnecting
         binding.listItemCard.setOnClickListener {
             if (!isConnecting) {

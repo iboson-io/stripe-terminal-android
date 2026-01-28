@@ -9,8 +9,7 @@ import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProvider
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import com.airbnb.lottie.LottieAnimationView
 import com.stripe.example.NavigationListener
 import com.stripe.example.R
 import com.stripe.example.TerminalRepository
@@ -90,8 +89,6 @@ class EventFragment : Fragment(), MobileReaderListener {
         }
     }
 
-    private lateinit var adapter: EventAdapter
-    private lateinit var eventRecyclerView: RecyclerView
     private lateinit var activityRef: WeakReference<FragmentActivity?>
     private var completionDialogShown = false // Prevent showing dialog multiple times
 
@@ -102,7 +99,6 @@ class EventFragment : Fragment(), MobileReaderListener {
         super.onCreate(savedInstanceState)
         activityRef = WeakReference(activity)
         viewModel = ViewModelProvider(this)[EventViewModel::class.java]
-        adapter = EventAdapter(viewModel)
 
         if (savedInstanceState == null) {
             val fragmentArgs = requireArguments()
@@ -186,10 +182,6 @@ class EventFragment : Fragment(), MobileReaderListener {
         binding.lifecycleOwner = viewLifecycleOwner
         binding.viewModel = viewModel
 
-        eventRecyclerView = binding.eventRecyclerView
-        eventRecyclerView.layoutManager = LinearLayoutManager(activity)
-        eventRecyclerView.adapter = adapter
-
         return binding.root
     }
 
@@ -197,6 +189,12 @@ class EventFragment : Fragment(), MobileReaderListener {
         binding.cancelButton.setOnClickListener {
             viewModel.cancel()
         }
+        
+        // Initialize Lottie animation
+        val lottieAnimationView = view.findViewById<LottieAnimationView>(R.id.lottie_animation_view)
+        lottieAnimationView.setAnimation(R.raw.nfc_reader)
+        lottieAnimationView.repeatCount = -1 // Infinite loop
+        lottieAnimationView.playAnimation()
         
         // Set amount and currency display if arguments exist (for deep link)
         val fragmentArgs = arguments

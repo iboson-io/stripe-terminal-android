@@ -15,123 +15,101 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        style="@style/Widget.Example.Backdrop"
+        android:background="@color/backgroundWhite"
+        android:fitsSystemWindows="true"
         tools:context=".fragment.event.EventFragment">
 
-        <com.google.android.material.appbar.AppBarLayout
-            android:id="@+id/app_bar"
-            android:layout_width="0dp"
+        <!-- Payment Processing Title -->
+        <TextView
+            android:id="@+id/header_title"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:elevation="0dp"
-            app:layout_constraintEnd_toEndOf="parent"
+            android:text="@string/payment_processing"
+            android:textColor="@color/textPrimary"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <TextView
-                    android:id="@+id/cancel_button"
-                    android:layout_width="wrap_content"
-                    android:layout_height="40dp"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp"
-                    android:paddingTop="16dp"
-                    android:text="@string/cancel"
-                    android:textColor="@{ContextCompat.getColor(context, viewModel.isComplete() ? R.color.colorPrimaryDark : R.color.colorAccent)}"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintStart_toStartOf="parent" />
-
-                <!-- Done button removed - will be shown in popup dialog instead -->
-
-            </androidx.constraintlayout.widget.ConstraintLayout>
-
-            <androidx.appcompat.widget.Toolbar
-                style="@style/Widget.Example.Toolbar"
-                android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                android:paddingStart="8dp"
-                android:paddingLeft="8dp"
-                android:paddingEnd="8dp"
-                android:paddingRight="8dp"
-                app:contentInsetStart="0dp"
-                app:title="@string/payment_processing" />
-
-        </com.google.android.material.appbar.AppBarLayout>
-
+        <!-- Amount Display - Large and Centered -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/amount_display_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="16dp"
-            android:paddingBottom="16dp"
+            android:paddingTop="24dp"
+            android:paddingBottom="32dp"
             android:visibility="@{viewModel.displayAmount != null &amp;&amp; viewModel.displayAmount.length() > 0 ? View.VISIBLE : View.GONE}"
-            app:layout_constraintTop_toBottomOf="@+id/app_bar"
+            app:layout_constraintTop_toBottomOf="@id/header_title"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
-
-            <TextView
-                android:id="@+id/amount_label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Amount:"
-                android:textStyle="bold"
-                android:textSize="14sp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
 
             <TextView
                 android:id="@+id/amount_value"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@{viewModel.displayAmount}"
-                android:textSize="18sp"
+                android:textSize="64sp"
                 android:textStyle="bold"
                 android:textColor="@color/colorAccent"
-                android:layout_marginStart="8dp"
-                app:layout_constraintStart_toEndOf="@id/amount_label"
-                app:layout_constraintTop_toTopOf="@id/amount_label"
-                app:layout_constraintBottom_toBottomOf="@id/amount_label" />
-
-            <TextView
-                android:id="@+id/currency_value"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@{viewModel.displayCurrency.toUpperCase()}"
-                android:textSize="14sp"
-                android:layout_marginStart="8dp"
-                app:layout_constraintStart_toEndOf="@id/amount_value"
-                app:layout_constraintTop_toTopOf="@id/amount_value"
-                app:layout_constraintBottom_toBottomOf="@id/amount_value" />
+                android:gravity="center"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <TextView
-            android:id="@+id/event_label"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="start"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:text="@string/event_log"
-            android:paddingTop="40dp"
-            app:layout_constraintTop_toBottomOf="@id/amount_display_layout" />
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/event_recycler_view"
+        <!-- Lottie Animation -->
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/lottie_animation_view"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:paddingTop="10dp"
-            app:events="@{viewModel.events}"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="24dp"
+            android:paddingBottom="8dp"
+            app:lottie_rawRes="@raw/nfc_reader"
+            app:lottie_autoPlay="true"
+            app:lottie_loop="true"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/event_label"
-            app:layout_constraintBottom_toBottomOf="parent"/>
+            app:layout_constraintTop_toBottomOf="@id/amount_display_layout"
+            app:layout_constraintBottom_toTopOf="@id/tap_card_text"/>
 
+        <!-- Please Tap Your Card Text - Close to Animation -->
+        <TextView
+            android:id="@+id/tap_card_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/please_tap_your_card"
+            android:textSize="18sp"
+            android:textColor="@color/textSecondary"
+            android:layout_marginTop="8dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/lottie_animation_view"
+            app:layout_constraintBottom_toTopOf="@id/cancel_button" />
+
+        <!-- Cancel Button at Bottom -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/cancel_button"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/cancel"
+            android:textColor="@{ContextCompat.getColor(context, viewModel.isComplete() ? R.color.textSecondary : R.color.colorAccent)}"
+            android:textSize="16sp"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="32dp"
+            android:layout_marginBottom="32dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

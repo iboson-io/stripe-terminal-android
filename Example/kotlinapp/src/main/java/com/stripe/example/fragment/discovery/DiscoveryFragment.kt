@@ -11,6 +11,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.os.BundleCompat
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
+import com.airbnb.lottie.LottieAnimationView
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -89,8 +90,12 @@ class DiscoveryFragment :
             adapter.updateConnectingReader(readerId)
         }
 
-        viewBinding.cancelButton.setOnClickListener {
-            viewModel.stopDiscovery { (requireActivity() as MainActivity).onCancelDiscovery() }
+        // Initialize Bluetooth Lottie animation
+        val bluetoothAnimation = viewBinding.root.findViewById<LottieAnimationView>(R.id.bluetooth_animation)
+        bluetoothAnimation?.let {
+            it.setAnimation(R.raw.bluetooth)
+            it.repeatCount = -1 // Infinite loop
+            it.playAnimation()
         }
 
         viewBinding.refreshButton.setOnClickListener {
@@ -135,13 +140,17 @@ class DiscoveryFragment :
         if (permissions.none { !it.value }) {
             startDiscovery()
         } else {
-            (requireActivity() as MainActivity).onCancelDiscovery()
+            // Permissions denied - close the app instead of navigating to terminal
+            requireActivity().finish()
         }
     }
 
     private fun startDiscovery() {
         if (checkPermission(viewModel.discoveryMethod)) {
-            viewModel.startDiscovery { (requireActivity() as MainActivity).onCancelDiscovery() }
+            // Discovery stopped callback - just stop discovery, don't navigate
+            viewModel.startDiscovery { 
+                // Discovery stopped - user can refresh to restart if needed
+            }
         }
     }
 

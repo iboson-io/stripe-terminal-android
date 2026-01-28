@@ -7,6 +7,9 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
         <item name="alertDialogTheme">@style/alertDialog</item>
+        <!-- Keep status bar as system default - transparent so system color shows through -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 
     <style name="alertDialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
@@ -19,7 +22,7 @@
     </style>
 
     <style name="Widget.Example.Backdrop" parent="">
-        <item name="android:background">?attr/colorPrimaryDark</item>
+        <item name="android:background">@color/backgroundLightGray</item>
         <item name="android:fitsSystemWindows">true</item>
     </style>
 
