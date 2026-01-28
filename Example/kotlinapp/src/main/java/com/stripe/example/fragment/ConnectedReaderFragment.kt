@@ -94,10 +94,7 @@ class ConnectedReaderFragment : Fragment() {
             (activity as? NavigationListener)?.onSelectUpdateWorkflow()
         }
 
-        // Set up the view offline logs button
-        view.findViewById<View>(R.id.view_offline_logs_button).setOnClickListener {
-            (activity as? NavigationListener)?.onSelectViewOfflineLogs()
-        }
+        // Offline logs button removed - app only works online
 
         // set up the ledger button
         view.findViewById<View>(R.id.view_ledger_button).setOnClickListener {

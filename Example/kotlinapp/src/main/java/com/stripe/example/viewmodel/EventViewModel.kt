@@ -44,6 +44,8 @@ class EventViewModel(eventsList: List<Event> = mutableListOf()) : ViewModel() {
     private val eventList: ArrayList<Event> = ArrayList(eventsList)
     var events: MutableLiveData<List<Event>> = MutableLiveData(eventList)
     var isComplete: MutableLiveData<Boolean> = MutableLiveData(false)
+    var displayAmount: MutableLiveData<String> = MutableLiveData("")
+    var displayCurrency: MutableLiveData<String> = MutableLiveData("")
     private val jobs = mutableListOf<Job>()
 
     fun addEvent(event: Event) {
@@ -124,8 +126,6 @@ class EventViewModel(eventsList: List<Event> = mutableListOf()) : ViewModel() {
         ApiClient.createPaymentIntent(
             amount = amount,
             currency = currency,
-            extendedAuth = false,
-            incrementalAuth = false,
             customerId = MainActivity.deepLinkCustomerId,
             orderId = MainActivity.deepLinkOrderId,
             locationId = MainActivity.deepLinkLocationId,

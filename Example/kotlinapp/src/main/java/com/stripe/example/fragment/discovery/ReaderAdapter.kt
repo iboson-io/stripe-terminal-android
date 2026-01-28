@@ -26,10 +26,34 @@ class ReaderAdapter(
     private val inflater: LayoutInflater,
 ) : RecyclerView.Adapter<ReaderHolder>() {
     private var readers: List<Reader> = viewModel.readers.value ?: listOf()
+    private var connectingReaderId: String? = null
 
     fun updateReaders(readers: List<Reader>) {
         this.readers = readers
         notifyDataSetChanged()
+    }
+
+    fun updateConnectingReader(readerId: String?) {
+        val oldConnectingId = connectingReaderId
+        connectingReaderId = readerId
+        
+        // Notify only the affected items
+        if (oldConnectingId != null) {
+            val oldPosition = readers.indexOfFirst { 
+                (it.id ?: it.serialNumber) == oldConnectingId 
+            }
+            if (oldPosition >= 0) {
+                notifyItemChanged(oldPosition)
+            }
+        }
+        if (readerId != null) {
+            val newPosition = readers.indexOfFirst { 
+                (it.id ?: it.serialNumber) == readerId 
+            }
+            if (newPosition >= 0) {
+                notifyItemChanged(newPosition)
+            }
+        }
     }
 
     override fun getItemCount(): Int {
@@ -37,7 +61,10 @@ class ReaderAdapter(
     }
 
     override fun onBindViewHolder(holder: ReaderHolder, position: Int) {
-        holder.bind(readers[position], null)
+        val reader = readers[position]
+        val readerIdentifier = reader.id ?: reader.serialNumber
+        val isConnecting = readerIdentifier == connectingReaderId
+        holder.bind(reader, null, isConnecting)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReaderHolder {

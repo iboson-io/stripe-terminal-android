@@ -1,7 +1,6 @@
 package com.stripe.example
 
 import com.stripe.example.fragment.discovery.DiscoveryMethod
-import com.stripe.example.model.OfflineBehaviorSelection
 import com.stripe.stripeterminal.external.models.Reader
 
 /**
@@ -44,10 +43,6 @@ interface NavigationListener {
     fun onRequestPayment(
         amount: Long,
         currency: String,
-        skipTipping: Boolean,
-        extendedAuth: Boolean,
-        incrementalAuth: Boolean,
-        offlineBehaviorSelection: OfflineBehaviorSelection,
     )
 
     /**

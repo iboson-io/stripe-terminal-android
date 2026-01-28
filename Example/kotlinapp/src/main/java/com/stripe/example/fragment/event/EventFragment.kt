@@ -16,7 +16,6 @@ import com.stripe.example.R
 import com.stripe.example.TerminalRepository
 import com.stripe.example.databinding.FragmentEventBinding
 import com.stripe.example.model.Event
-import com.stripe.example.model.OfflineBehaviorSelection
 import com.stripe.example.viewmodel.EventViewModel
 import com.stripe.stripeterminal.external.callable.MobileReaderListener
 import com.stripe.stripeterminal.external.models.AllowRedisplay
@@ -47,10 +46,6 @@ class EventFragment : Fragment(), MobileReaderListener {
         private const val CURRENCY = "com.stripe.example.fragment.event.EventFragment.currency"
         private const val REQUEST_PAYMENT = "com.stripe.example.fragment.event.EventFragment.request_payment"
         private const val SAVE_CARD = "com.stripe.example.fragment.event.EventFragment.save_card"
-        private const val SKIP_TIPPING = "com.stripe.example.fragment.event.EventFragment.skip_tipping"
-        private const val EXTENDED_AUTH = "com.stripe.example.fragment.event.EventFragment.extended_auth"
-        private const val INCREMENTAL_AUTH = "com.stripe.example.fragment.event.EventFragment.incremental_auth"
-        private const val OFFLINE_BEHAVIOR = "com.stripe.example.fragment.event.EventFragment.offline_behavior"
         private const val TRANSACTION_ID = "com.stripe.example.fragment.event.EventFragment.transaction_id"
         private const val REFUND_PAYMENT = "com.stripe.example.fragment.event.EventFragment.refund_payment"
         private const val CANCEL_TRANSACTION = "com.stripe.example.fragment.event.EventFragment.cancel_transaction"
@@ -65,21 +60,13 @@ class EventFragment : Fragment(), MobileReaderListener {
 
         fun requestPayment(
             amount: Long,
-            currency: String,
-            skipTipping: Boolean,
-            extendedAuth: Boolean,
-            incrementalAuth: Boolean,
-            offlineBehaviorSelection: OfflineBehaviorSelection
+            currency: String
         ): EventFragment {
             val fragment = EventFragment()
             val bundle = Bundle()
             bundle.putLong(AMOUNT, amount)
             bundle.putString(CURRENCY, currency)
             bundle.putBoolean(REQUEST_PAYMENT, true)
-            bundle.putBoolean(SKIP_TIPPING, skipTipping)
-            bundle.putBoolean(EXTENDED_AUTH, extendedAuth)
-            bundle.putBoolean(INCREMENTAL_AUTH, incrementalAuth)
-            bundle.putSerializable(OFFLINE_BEHAVIOR, offlineBehaviorSelection)
             fragment.arguments = bundle
             return fragment
         }
@@ -106,6 +93,7 @@ class EventFragment : Fragment(), MobileReaderListener {
     private lateinit var adapter: EventAdapter
     private lateinit var eventRecyclerView: RecyclerView
     private lateinit var activityRef: WeakReference<FragmentActivity?>
+    private var completionDialogShown = false // Prevent showing dialog multiple times
 
     private lateinit var binding: FragmentEventBinding
     private lateinit var viewModel: EventViewModel
@@ -128,24 +116,18 @@ class EventFragment : Fragment(), MobileReaderListener {
     }
 
     private fun handleRequestPayment(args: Bundle) {
-        val extendedAuth = args.getBoolean(EXTENDED_AUTH)
-        val incrementalAuth = args.getBoolean(INCREMENTAL_AUTH)
         val currency = args.getString(CURRENCY)?.lowercase(Locale.ENGLISH) ?: "usd"
-        val cardPresentParametersBuilder = CardPresentParameters.Builder()
-        if (extendedAuth) {
-            cardPresentParametersBuilder.setRequestExtendedAuthorization(true)
-        }
-        if (incrementalAuth) {
-            cardPresentParametersBuilder.setRequestIncrementalAuthorizationSupport(true)
-        }
-        val offlineBehavior = BundleCompat.getSerializable(
-            args,
-            OFFLINE_BEHAVIOR,
-            OfflineBehaviorSelection::class.java
-        )?.offlineBehavior
+        val amount = args.getLong(AMOUNT)
+        
+        // Set display amount and currency in ViewModel
+        val formattedAmount = formatCentsToString(amount.toInt())
+        viewModel.displayAmount.value = formattedAmount
+        viewModel.displayCurrency.value = currency.uppercase()
 
+        // M2 readers use fixed amounts from deep link, no extended/incremental auth needed
+        // App only works online, so no offline configuration needed
         val paymentMethodOptionsParameters = PaymentMethodOptionsParameters.Builder()
-            .setCardPresentParameters(cardPresentParametersBuilder.build())
+            .setCardPresentParameters(CardPresentParameters.Builder().build())
             .build()
 
         val params = PaymentIntentParameters.Builder(
@@ -157,15 +139,16 @@ class EventFragment : Fragment(), MobileReaderListener {
                 }
             }
         )
-            .setAmount(args.getLong(AMOUNT))
+            .setAmount(amount)
             .setCurrency(currency)
             .setPaymentMethodOptionsParameters(paymentMethodOptionsParameters)
             .setMetadata(TerminalRepository.genMetaData())
             .build()
-        val createConfiguration = offlineBehavior?.let(::CreateConfiguration)
-        val skipTipping = arguments?.getBoolean(SKIP_TIPPING) ?: false
+        // No offline configuration - app only works online
+        val createConfiguration: CreateConfiguration? = null
+        // M2 readers don't support tipping (no customer-facing display)
         val collectConfig = CollectPaymentIntentConfiguration.Builder()
-            .skipTipping(skipTipping)
+            .skipTipping(true) // Always skip tipping for M2 readers
             .build()
 
         viewModel.takePayment(
@@ -214,18 +197,36 @@ class EventFragment : Fragment(), MobileReaderListener {
         binding.cancelButton.setOnClickListener {
             viewModel.cancel()
         }
+        
+        // Set amount and currency display if arguments exist (for deep link)
+        val fragmentArgs = arguments
+        if (fragmentArgs != null && fragmentArgs.getBoolean(REQUEST_PAYMENT, false)) {
+            val amount = fragmentArgs.getLong(AMOUNT)
+            val currency = fragmentArgs.getString(CURRENCY)?.uppercase() ?: "USD"
+            val formattedAmount = formatCentsToString(amount.toInt())
+            viewModel.displayAmount.value = formattedAmount
+            viewModel.displayCurrency.value = currency
+        }
 
-        binding.doneButton.setOnClickListener {
-            // Clear deep link data after payment completion
-            com.stripe.example.MainActivity.clearDeepLinkData()
-            
-            activityRef.get()?.let {
-                if (it is NavigationListener) {
-                    it.runOnUiThread {
-                        it.onRequestExitWorkflow()
-                    }
-                }
+        // Observe payment completion and automatically close app
+        viewModel.isComplete.observe(viewLifecycleOwner) { isComplete ->
+            if (isComplete && !completionDialogShown) {
+                // Auto-close app when payment is complete (only once)
+                completionDialogShown = true
+                // Small delay to show final event, then close app
+                view.postDelayed({
+                    closeApp()
+                }, 1000) // 1 second delay to show final status
             }
+        }
+    }
+    
+    private fun closeApp() {
+        // Clear deep link data after payment completion
+        com.stripe.example.MainActivity.clearDeepLinkData()
+        
+        activityRef.get()?.let { activity ->
+            activity.finishAffinity() // Close app completely to return to web app
         }
     }
 
@@ -247,5 +248,10 @@ class EventFragment : Fragment(), MobileReaderListener {
                 viewModel.addEvent(Event(message, method))
             }
         }
+    }
+    
+    private fun formatCentsToString(cents: Int): String {
+        val dollars = cents / 100.0
+        return String.format(Locale.US, "$%.2f", dollars)
     }
 }

@@ -35,7 +35,6 @@ class TerminalFragment : Fragment(R.layout.fragment_terminal) {
         private val discoveryMethods =
             listOf(
                 DiscoveryMethod.BLUETOOTH_SCAN,
-                DiscoveryMethod.TAP_TO_PAY,
                 DiscoveryMethod.USB
             )
 

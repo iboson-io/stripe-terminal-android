@@ -20,6 +20,12 @@ android {
 
         val backendUrl = project.property("EXAMPLE_BACKEND_URL").toString().trim('"')
         buildConfigField("String", "EXAMPLE_BACKEND_URL", "\"$backendUrl\"")
+        
+        val locationId = project.property("LOCATION_ID").toString().trim('"').trim()
+        buildConfigField("String", "STRIPE_LOCATION_ID", "\"$locationId\"")
+        
+        val useSimulatedReader = project.property("USE_SIMULATED_READER").toString().trim('"').toBoolean()
+        buildConfigField("boolean", "USE_SIMULATED_READER", useSimulatedReader.toString())
     }
 
     buildTypes {
@@ -65,6 +71,7 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("androidx.browser:browser:1.8.0")
 
     // ViewModel and LiveData
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:$androidxLifecycleVersion")

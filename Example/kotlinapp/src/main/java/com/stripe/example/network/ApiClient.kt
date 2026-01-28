@@ -1,4 +1,4 @@
-﻿package com.stripe.example.network
+package com.stripe.example.network
 
 import android.util.Log
 import com.stripe.example.BuildConfig
@@ -109,8 +109,6 @@ object ApiClient {
     internal fun createPaymentIntent(
         amount: Long,
         currency: String,
-        extendedAuth: Boolean,
-        incrementalAuth: Boolean,
         customerId: String?,
         orderId: String?,
         locationId: String?,
@@ -128,13 +126,6 @@ object ApiClient {
             
             // Add email as top-level parameter
             email?.let { put("email", it) }
-
-            if (extendedAuth) {
-                put("payment_method_options[card_present[request_extended_authorization]]", "true")
-            }
-            if (incrementalAuth) {
-                put("payment_method_options[card_present[request_incremental_authorization_support]]", "true")
-            }
             
             // Add metadata to payment intent
             customerId?.let { put("metadata[customer_id]", it) }

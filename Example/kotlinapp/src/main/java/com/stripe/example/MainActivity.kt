@@ -18,14 +18,11 @@ import com.stripe.example.fragment.admin.LedgerFragment
 import com.stripe.example.fragment.discovery.DiscoveryFragment
 import com.stripe.example.fragment.discovery.DiscoveryMethod
 import com.stripe.example.fragment.event.EventFragment
-import com.stripe.example.fragment.offline.OfflinePaymentsLogFragment
-import com.stripe.example.model.OfflineBehaviorSelection
 import com.stripe.example.network.TokenProvider
 import com.stripe.stripeterminal.Terminal
 import com.stripe.stripeterminal.external.OfflineMode
 import com.stripe.stripeterminal.external.callable.Cancelable
 import com.stripe.stripeterminal.external.callable.MobileReaderListener
-import com.stripe.stripeterminal.external.callable.TapToPayReaderListener
 import com.stripe.stripeterminal.external.models.ConnectionStatus
 import com.stripe.stripeterminal.external.models.DisconnectReason
 import com.stripe.stripeterminal.external.models.Location
@@ -39,8 +36,7 @@ import com.stripe.stripeterminal.log.LogLevel
 class MainActivity :
     AppCompatActivity(),
     NavigationListener,
-    MobileReaderListener,
-    TapToPayReaderListener {
+    MobileReaderListener {
 
     companion object {
         private const val TAG = "MainActivity"
@@ -109,13 +105,23 @@ class MainActivity :
         setIntent(intent)
         handleDeepLink(intent)
         
-        // If deep link was received, refresh the current fragment
-        // The payment flow will use the deep link data
+        // If deep link was received, handle it
         if (deepLinkAmount != null) {
             Log.d(TAG, "Deep link received, amount: $deepLinkAmountDisplay, currency: $deepLinkCurrency")
-            // If reader is already connected, navigate to payment screen
-            if (Terminal.getInstance().connectionStatus == ConnectionStatus.CONNECTED) {
-                navigateTo(PaymentFragment.TAG, PaymentFragment())
+            val connectionStatus = Terminal.getInstance().connectionStatus
+            if (connectionStatus == ConnectionStatus.CONNECTED) {
+                // Reader connected, navigate directly to payment/testing screen
+                navigateTo(
+                    EventFragment.TAG,
+                    EventFragment.requestPayment(
+                        deepLinkAmount!!,
+                        deepLinkCurrency.lowercase()
+                    )
+                )
+            } else {
+                // Reader not connected, auto-start Bluetooth discovery
+                Log.d(TAG, "Reader not connected, auto-starting Bluetooth discovery (simulated: ${BuildConfig.USE_SIMULATED_READER})")
+                onRequestDiscovery(isSimulated = BuildConfig.USE_SIMULATED_READER, discoveryMethod = DiscoveryMethod.BLUETOOTH_SCAN)
             }
         }
     }
@@ -222,7 +228,9 @@ class MainActivity :
         if (Terminal.getInstance().connectionStatus == ConnectionStatus.CONNECTED) {
             navigateTo(ConnectedReaderFragment.TAG, ConnectedReaderFragment())
         } else {
-            navigateTo(TerminalFragment.TAG, TerminalFragment())
+            // Auto-start Bluetooth discovery (production mode - skip selection screen)
+            Log.d(TAG, "Auto-starting Bluetooth discovery (simulated: ${BuildConfig.USE_SIMULATED_READER})")
+            onRequestDiscovery(isSimulated = BuildConfig.USE_SIMULATED_READER, discoveryMethod = DiscoveryMethod.BLUETOOTH_SCAN)
         }
     }
 
@@ -232,20 +240,12 @@ class MainActivity :
     override fun onRequestPayment(
         amount: Long,
         currency: String,
-        skipTipping: Boolean,
-        extendedAuth: Boolean,
-        incrementalAuth: Boolean,
-        offlineBehaviorSelection: OfflineBehaviorSelection,
     ) {
         navigateTo(
                 EventFragment.TAG,
             EventFragment.requestPayment(
                 amount,
-                currency,
-                skipTipping,
-                extendedAuth,
-                incrementalAuth,
-                offlineBehaviorSelection
+                currency
             )
         )
     }
@@ -287,7 +287,7 @@ class MainActivity :
      * [ConnectedReaderFragment]
      */
     override fun onSelectViewOfflineLogs() {
-        navigateTo(OfflinePaymentsLogFragment.TAG, OfflinePaymentsLogFragment())
+        // Offline logs not needed - app only works online
     }
 
     override fun onSelectViewLedger() {
@@ -314,16 +314,24 @@ class MainActivity :
      * Callback function called on completion of [Terminal.connectReader]
      */
     override fun onConnectReader() {
-        navigateTo(ConnectedReaderFragment.TAG, ConnectedReaderFragment())
-        
-        // If deep link exists, auto-navigate to payment screen
+        // If deep link exists, navigate directly to payment/testing screen
         if (deepLinkAmount != null) {
-            navigateTo(PaymentFragment.TAG, PaymentFragment())
+            navigateTo(
+                EventFragment.TAG,
+                EventFragment.requestPayment(
+                    deepLinkAmount!!,
+                    deepLinkCurrency.lowercase()
+                )
+            )
+        } else {
+            navigateTo(ConnectedReaderFragment.TAG, ConnectedReaderFragment())
         }
     }
 
     override fun onDisconnectReader() {
-        navigateTo(TerminalFragment.TAG, TerminalFragment())
+        // Auto-start Bluetooth discovery after disconnect (production mode)
+        Log.d(TAG, "Reader disconnected, auto-starting Bluetooth discovery (simulated: ${BuildConfig.USE_SIMULATED_READER})")
+        onRequestDiscovery(isSimulated = BuildConfig.USE_SIMULATED_READER, discoveryMethod = DiscoveryMethod.BLUETOOTH_SCAN)
     }
 
     override fun onStartInstallingUpdate(update: ReaderSoftwareUpdate, cancelable: Cancelable?) {
@@ -401,7 +409,7 @@ class MainActivity :
     }
 
     /**
-     * Initialize the [Terminal] and go to the [TerminalFragment]
+     * Initialize the [Terminal] and navigate based on deep link and connection status
      */
     @OptIn(OfflineMode::class)
     private fun initialize() {
@@ -420,7 +428,25 @@ class MainActivity :
             throw RuntimeException(e)
         }
 
-        navigateTo(TerminalFragment.TAG, TerminalFragment())
+        // Check if deep link exists and reader is already connected
+        val connectionStatus = Terminal.getInstance().connectionStatus
+        if (deepLinkAmount != null && connectionStatus == ConnectionStatus.CONNECTED) {
+            Log.d(TAG, "Deep link present and reader connected, navigating directly to payment/testing screen")
+            navigateTo(
+                EventFragment.TAG,
+                EventFragment.requestPayment(
+                    deepLinkAmount!!,
+                    deepLinkCurrency.lowercase()
+                )
+            )
+        } else if (connectionStatus == ConnectionStatus.CONNECTED) {
+            // Reader already connected, go to connected reader screen
+            navigateTo(ConnectedReaderFragment.TAG, ConnectedReaderFragment())
+        } else {
+            // Auto-start Bluetooth discovery (production mode - no simulated, no selection screen)
+            Log.d(TAG, "Auto-starting Bluetooth discovery (simulated: ${BuildConfig.USE_SIMULATED_READER})")
+            onRequestDiscovery(isSimulated = BuildConfig.USE_SIMULATED_READER, discoveryMethod = DiscoveryMethod.BLUETOOTH_SCAN)
+        }
     }
 
     /**

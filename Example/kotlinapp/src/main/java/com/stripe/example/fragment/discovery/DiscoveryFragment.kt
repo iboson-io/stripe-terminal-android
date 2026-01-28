@@ -84,8 +84,20 @@ class DiscoveryFragment :
         val adapter = ReaderAdapter(viewModel, layoutInflater)
         readerRecyclerView.adapter = adapter
 
+        // Observe connectingReaderId changes and update adapter
+        viewModel.connectingReaderId.observe(viewLifecycleOwner) { readerId ->
+            adapter.updateConnectingReader(readerId)
+        }
+
         viewBinding.cancelButton.setOnClickListener {
             viewModel.stopDiscovery { (requireActivity() as MainActivity).onCancelDiscovery() }
+        }
+
+        viewBinding.refreshButton.setOnClickListener {
+            // Restart discovery when refresh is clicked
+            viewModel.stopDiscovery {
+                startDiscovery()
+            }
         }
 
         launchAndRepeatWithViewLifecycle {
@@ -103,7 +115,7 @@ class DiscoveryFragment :
 
     override fun onStartInstallingUpdate(update: ReaderSoftwareUpdate, cancelable: Cancelable?) {
         Log.d("DiscoveryFragment", "onStartInstallingUpdate")
-        viewModel.isConnecting.value = false
+        viewModel.connectingReaderId.value = null
         viewModel.isUpdating.value = true
         viewModel.discoveryTask = cancelable
     }

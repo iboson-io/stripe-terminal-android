@@ -18,15 +18,25 @@ class ReaderHolder(
     private val binding = ListItemCardBinding.bind(parent)
     private val resources = parent.resources
 
-    fun bind(reader: Reader, locationSelection: Location?) {
+    fun bind(reader: Reader, locationSelection: Location?, isConnecting: Boolean) {
         binding.listItemCardTitle.text = reader.serialNumber
             ?: reader.id
             ?: resources.getString(R.string.discovery_reader_unknown)
-        // For M2 readers, show their registered location (should already be set)
+        // For M2 readers, location will be set from gradle.properties during connection
+        // Show reader's location if available, otherwise show device type
         binding.listItemCardDescription.text = reader.location?.displayName
-            ?: resources.getString(R.string.discovery_reader_location_unavailable)
+            ?: reader.deviceType?.toString()
+            ?: ""
+        
+        // Show/hide spinner based on connecting state
+        binding.listItemCardSpinner.visibility = if (isConnecting) View.VISIBLE else View.GONE
+        
+        // Disable click when connecting
+        binding.listItemCard.isClickable = !isConnecting
         binding.listItemCard.setOnClickListener {
-            clickListener.onClick(reader)
+            if (!isConnecting) {
+                clickListener.onClick(reader)
+            }
         }
     }
 }

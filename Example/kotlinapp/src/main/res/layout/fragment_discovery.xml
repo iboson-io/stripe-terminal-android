@@ -50,22 +50,6 @@
 
         </com.google.android.material.appbar.AppBarLayout>
 
-        <TextView
-            android:id="@+id/reader_description"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/connecting"
-            android:gravity="center_horizontal"
-            android:drawableTop="@mipmap/readerempty"
-            android:paddingTop="40dp"
-            android:paddingBottom="40dp"
-            android:visibility="@{viewModel.isConnecting ? View.VISIBLE : View.GONE}"
-            style="@style/Widget.Example.Backdrop"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/app_bar"
-            tools:ignore="UseCompatTextViewDrawableXml" />
 
         <TextView
             android:id="@+id/update_description"
@@ -101,7 +85,7 @@
             android:id="@+id/nearby_readers_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="@{(viewModel.isConnecting || viewModel.isUpdating) ? View.GONE : View.VISIBLE}"
+            android:visibility="@{viewModel.isUpdating ? View.GONE : View.VISIBLE}"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/app_bar"
@@ -120,12 +104,32 @@
 
             <ProgressBar
                 android:id="@+id/progress_bar"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:visibility="@{viewModel.isDiscoveryTimedOut ? View.GONE : View.VISIBLE}"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginEnd="16dp"
                 android:indeterminate="true" />
+            
+            <TextView
+                android:id="@+id/refresh_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/refresh"
+                android:textColor="@color/colorAccent"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground"
+                android:visibility="@{viewModel.isDiscoveryTimedOut ? View.VISIBLE : View.GONE}"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -133,7 +137,7 @@
             android:id="@+id/reader_recycler_view"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="@{(viewModel.isConnecting || viewModel.isUpdating) ? View.GONE : View.VISIBLE}"
+            android:visibility="@{viewModel.isUpdating ? View.GONE : View.VISIBLE}"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/nearby_readers_layout"
