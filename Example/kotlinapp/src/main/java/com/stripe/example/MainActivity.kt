@@ -128,12 +128,20 @@ class MainActivity :
 
     private fun handleDeepLink(intent: Intent?) {
         try {
-            val data: Uri = intent?.data ?: return
+            val data: Uri? = intent?.data
+            // If no deep link in intent, clear any old deep link data
+            if (data == null) {
+                Log.d(TAG, "No deep link in intent, clearing old deep link data")
+                clearDeepLinkData()
+                return
+            }
+            
             Log.d(TAG, "Deep link: $data")
 
             val amountParam = data.getQueryParameter("amount")
             if (amountParam.isNullOrEmpty()) {
                 Log.e(TAG, "Deep link missing required 'amount' parameter")
+                clearDeepLinkData() // Clear old data if new deep link is invalid
                 return
             }
             
@@ -443,10 +451,11 @@ class MainActivity :
             )
         } else if (connectionStatus == ConnectionStatus.CONNECTED) {
             // Reader already connected, go to connected reader screen
+            Log.d(TAG, "Reader connected, showing connected reader screen")
             navigateTo(ConnectedReaderFragment.TAG, ConnectedReaderFragment())
         } else {
-            // Auto-start Bluetooth discovery (production mode - no simulated, no selection screen)
-            Log.d(TAG, "Auto-starting Bluetooth discovery (simulated: ${BuildConfig.USE_SIMULATED_READER})")
+            // No reader connected, auto-start Bluetooth discovery
+            Log.d(TAG, "No reader connected, auto-starting Bluetooth discovery (simulated: ${BuildConfig.USE_SIMULATED_READER})")
             onRequestDiscovery(isSimulated = BuildConfig.USE_SIMULATED_READER, discoveryMethod = DiscoveryMethod.BLUETOOTH_SCAN)
         }
     }

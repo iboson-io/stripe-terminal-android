@@ -136,7 +136,7 @@ object ApiClient {
             washType?.let { put("metadata[wash_type]", it) }
             packageId?.let { put("metadata[package_id]", it) }
             vehicleId?.let { put("metadata[vehicle_id]", it) }
-            put("metadata[source]", "saas")
+            put("metadata[source]", "lpr")
         }
 
         Log.d(TAG, "Creating PaymentIntent with params: $createPaymentIntentParams")

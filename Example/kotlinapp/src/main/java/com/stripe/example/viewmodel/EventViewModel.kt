@@ -46,6 +46,7 @@ class EventViewModel(eventsList: List<Event> = mutableListOf()) : ViewModel() {
     var isComplete: MutableLiveData<Boolean> = MutableLiveData(false)
     var displayAmount: MutableLiveData<String> = MutableLiveData("")
     var displayCurrency: MutableLiveData<String> = MutableLiveData("")
+    var statusMessage: MutableLiveData<String> = MutableLiveData("")
     private val jobs = mutableListOf<Job>()
 
     fun addEvent(event: Event) {
@@ -120,6 +121,7 @@ class EventViewModel(eventsList: List<Event> = mutableListOf()) : ViewModel() {
         collectConfiguration: CollectPaymentIntentConfiguration,
         confirmConfiguration: ConfirmPaymentIntentConfiguration
     ) {
+        statusMessage.postValue("Connecting to server...")
         addEvent(Event("Creating PaymentIntent on backend...", "backend.createPaymentIntent"))
         
         // Create PaymentIntent on backend with all metadata from deep link
@@ -143,6 +145,7 @@ class EventViewModel(eventsList: List<Event> = mutableListOf()) : ViewModel() {
                     if (!response.isSuccessful) {
                         val errorBody = response.errorBody()?.string()
                         Log.e("EventViewModel", "Backend PI creation failed: ${response.code()} - $errorBody")
+                        statusMessage.postValue("Connection failed. Please try again.")
                         addEvent(Event("Failed to create PaymentIntent: ${response.message()}", "backend.createPaymentIntent"))
                         isComplete.postValue(true)
                         return
@@ -151,11 +154,13 @@ class EventViewModel(eventsList: List<Event> = mutableListOf()) : ViewModel() {
                     val secret = response.body()?.secret
                     if (secret.isNullOrEmpty()) {
                         Log.e("EventViewModel", "PaymentIntent secret is null or empty")
+                        statusMessage.postValue("Invalid response from server. Please try again.")
                         addEvent(Event("Invalid payment response from server", "backend.createPaymentIntent"))
                         isComplete.postValue(true)
                         return
                     }
                     
+                    statusMessage.postValue("Connected. Processing payment...")
                     addEvent(Event("PaymentIntent created on backend", "backend.createPaymentIntent"))
                     
                     // Retrieve and process the PaymentIntent
@@ -164,6 +169,13 @@ class EventViewModel(eventsList: List<Event> = mutableListOf()) : ViewModel() {
                 
                 override fun onFailure(call: Call<PaymentIntentCreationResponse>, t: Throwable) {
                     Log.e("EventViewModel", "Network error creating PaymentIntent", t)
+                    val userMessage = when (t) {
+                        is java.net.UnknownHostException -> "No internet connection. Please check your network."
+                        is java.net.SocketTimeoutException -> "Connection timeout. Please try again."
+                        is java.io.IOException -> "Unable to connect to server. Please try again."
+                        else -> "Connection error. Please try again."
+                    }
+                    statusMessage.postValue(userMessage)
                     val errorMessage = when (t) {
                         is java.net.UnknownHostException -> "No internet connection"
                         is java.net.SocketTimeoutException -> "Connection timeout"
@@ -185,11 +197,13 @@ class EventViewModel(eventsList: List<Event> = mutableListOf()) : ViewModel() {
         viewModelScopeSafeLaunch {
             Terminal.getInstance().run {
                 // Retrieve the PaymentIntent using the client secret from backend
+                statusMessage.postValue("Connected. Retrieving payment...")
                 val retrievedPI = retrievePaymentIntent(clientSecret)
                 addEvent(Event("Retrieved PaymentIntent", "terminal.retrievePaymentIntent"))
                 TerminalRepository.addPaymentIntent(retrievedPI)
                 
                 // Process the payment (collect and confirm)
+                statusMessage.postValue("Connected. Waiting for card...")
                 val processedPI = processPaymentIntent(
                     intent = retrievedPI,
                     collectConfig = collectConfiguration,
@@ -199,12 +213,15 @@ class EventViewModel(eventsList: List<Event> = mutableListOf()) : ViewModel() {
                 TerminalRepository.addPaymentIntent(processedPI)
                 
                 // Auto-capture the payment intent on backend
+                statusMessage.postValue("Connected. Finalizing payment...")
                 processedPI.id?.let { paymentIntentId ->
                     try {
                         ApiClient.capturePaymentIntent(paymentIntentId)
                         addEvent(Event("Captured PaymentIntent", "backend.capturePaymentIntent"))
+                        statusMessage.postValue("Payment successful!")
                     } catch (e: Exception) {
                         addEvent(Event("Error capturing: ${e.message}", "backend.capturePaymentIntent"))
+                        statusMessage.postValue("Payment processed, but capture failed. Please check with support.")
                     }
                 }
                 
@@ -248,8 +265,16 @@ class EventViewModel(eventsList: List<Event> = mutableListOf()) : ViewModel() {
             try {
                 block()
             } catch (e: TerminalException) {
+                val userMessage = when {
+                    e.errorMessage?.contains("network", ignoreCase = true) == true -> "Network error. Please try again."
+                    e.errorMessage?.contains("timeout", ignoreCase = true) == true -> "Connection timeout. Please try again."
+                    e.errorMessage?.contains("cancel", ignoreCase = true) == true -> "Payment canceled."
+                    else -> "Payment failed. Please try again."
+                }
+                statusMessage.postValue(userMessage)
                 addEvent(Event("${e.errorCode}", e.errorMessage))
             } catch (e: CancellationException) {
+                statusMessage.postValue("Payment canceled.")
                 addEvent(Event("Canceled", "viewModel.cancelIntents"))
                 throw e
             } finally {

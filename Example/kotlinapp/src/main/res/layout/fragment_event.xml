@@ -10,6 +10,9 @@
         <variable
             name="viewModel"
             type="com.stripe.example.viewmodel.EventViewModel"/>
+        <variable
+            name="context"
+            type="android.content.Context"/>
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -61,6 +64,25 @@
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
+        <!-- Status Message Display -->
+        <TextView
+            android:id="@+id/status_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@{viewModel.statusMessage}"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/colorAccent"
+            android:gravity="center"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:visibility="@{viewModel.statusMessage != null &amp;&amp; viewModel.statusMessage.length() > 0 ? View.VISIBLE : View.GONE}"
+            app:layout_constraintTop_toBottomOf="@id/amount_display_layout"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
         <!-- Lottie Animation -->
         <com.airbnb.lottie.LottieAnimationView
             android:id="@+id/lottie_animation_view"
@@ -75,7 +97,7 @@
             app:lottie_loop="true"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/amount_display_layout"
+            app:layout_constraintTop_toBottomOf="@id/status_message"
             app:layout_constraintBottom_toTopOf="@id/tap_card_text"/>
 
         <!-- Please Tap Your Card Text - Close to Animation -->

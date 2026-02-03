@@ -48,6 +48,7 @@ class UpdateReaderFragment : Fragment(), MobileReaderListener {
         binding = DataBindingUtil.inflate(inflater, R.layout.fragment_update_reader, container, false)
         binding.lifecycleOwner = viewLifecycleOwner
         binding.viewModel = viewModel
+        binding.context = requireContext()
 
         if (viewModel.reader == null) {
             viewModel.reader = Terminal.getInstance().connectedReader

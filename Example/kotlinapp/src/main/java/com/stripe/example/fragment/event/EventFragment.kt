@@ -181,6 +181,7 @@ class EventFragment : Fragment(), MobileReaderListener {
         binding = DataBindingUtil.inflate(inflater, R.layout.fragment_event, container, false)
         binding.lifecycleOwner = viewLifecycleOwner
         binding.viewModel = viewModel
+        binding.context = requireContext()
 
         return binding.root
     }
