@@ -27,6 +27,7 @@ import com.stripe.stripeterminal.external.models.SetupIntent
 import com.stripe.stripeterminal.external.models.SetupIntentCancellationParameters
 import com.stripe.stripeterminal.external.models.SetupIntentParameters
 import com.stripe.stripeterminal.external.models.TerminalException
+import com.stripe.stripeterminal.external.models.ConnectionStatus
 import com.stripe.stripeterminal.ktx.cancelPaymentIntent
 import com.stripe.stripeterminal.ktx.cancelSetupIntent
 import com.stripe.stripeterminal.ktx.createPaymentIntent
@@ -70,6 +71,14 @@ class EventViewModel(eventsList: List<Event> = mutableListOf()) : ViewModel() {
         collectConfiguration: CollectPaymentIntentConfiguration,
         confirmConfiguration: ConfirmPaymentIntentConfiguration
     ) {
+        // Enable payment only when terminal is connected
+        if (Terminal.getInstance().connectionStatus != ConnectionStatus.CONNECTED) {
+            statusMessage.postValue("Please wait for the reader to connect.")
+            addEvent(Event("Reader not connected", "viewModel.takePayment"))
+            isComplete.postValue(true)
+            return
+        }
+
         // Check if deep link data exists - use backend flow for M2 readers with metadata
         val deepLinkAmount = MainActivity.deepLinkAmount
         if (deepLinkAmount != null) {
@@ -121,6 +130,12 @@ class EventViewModel(eventsList: List<Event> = mutableListOf()) : ViewModel() {
         collectConfiguration: CollectPaymentIntentConfiguration,
         confirmConfiguration: ConfirmPaymentIntentConfiguration
     ) {
+        if (Terminal.getInstance().connectionStatus != ConnectionStatus.CONNECTED) {
+            statusMessage.postValue("Please wait for the reader to connect.")
+            addEvent(Event("Reader not connected", "backend.takePaymentWithBackend"))
+            isComplete.postValue(true)
+            return
+        }
         statusMessage.postValue("Connecting to server...")
         addEvent(Event("Creating PaymentIntent on backend...", "backend.createPaymentIntent"))
         
@@ -137,6 +152,7 @@ class EventViewModel(eventsList: List<Event> = mutableListOf()) : ViewModel() {
             washType = MainActivity.deepLinkWashType,
             packageId = MainActivity.deepLinkPackageId,
             vehicleId = MainActivity.deepLinkVehicleId,
+            source = MainActivity.deepLinkSource,
             callback = object : Callback<PaymentIntentCreationResponse> {
                 override fun onResponse(
                     call: Call<PaymentIntentCreationResponse>,

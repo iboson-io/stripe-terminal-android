@@ -32,6 +32,7 @@ import com.stripe.stripeterminal.external.models.ReaderInputOptions
 import com.stripe.stripeterminal.external.models.ReaderSoftwareUpdate
 import com.stripe.stripeterminal.external.models.TerminalException
 import com.stripe.stripeterminal.log.LogLevel
+import android.widget.Toast
 
 class MainActivity :
     AppCompatActivity(),
@@ -54,6 +55,8 @@ class MainActivity :
         var deepLinkWashType: String? = null
         var deepLinkPackageId: String? = null
         var deepLinkVehicleId: String? = null
+        var deepLinkSource: String? = null
+        var deepLinkPhoneNumber: String? = null
         
         fun clearDeepLinkData() {
             deepLinkAmount = null
@@ -68,6 +71,8 @@ class MainActivity :
             deepLinkWashType = null
             deepLinkPackageId = null
             deepLinkVehicleId = null
+            deepLinkSource = null
+            deepLinkPhoneNumber = null
         }
     }
 
@@ -157,6 +162,8 @@ class MainActivity :
             val washType = data.getQueryParameter("wash_type")
             val packageId = data.getQueryParameter("package_id")
             val vehicleId = data.getQueryParameter("vehicle_id")
+            val source = data.getQueryParameter("source")
+            val phoneNumber = data.getQueryParameter("phoneNumber")
 
             try {
                 val amountDecimal = amountParam.toDouble()
@@ -178,10 +185,12 @@ class MainActivity :
                 deepLinkWashType = washType
                 deepLinkPackageId = packageId
                 deepLinkVehicleId = vehicleId
+                deepLinkSource = source
+                deepLinkPhoneNumber = phoneNumber
 
                 Log.d(TAG, "Amount: $amountParam ($amountInCents cents), Currency: $deepLinkCurrency")
                 Log.d(TAG, "CustomerId: $customerId, OrderId: $orderId, LocationId: $locationId, Email: $email, Id: $id")
-                Log.d(TAG, "AdminUserId: $adminUserId, WashType: $washType, PackageId: $packageId, VehicleId: $vehicleId")
+                Log.d(TAG, "AdminUserId: $adminUserId, WashType: $washType, PackageId: $packageId, VehicleId: $vehicleId, Source: $source, PhoneNumber: $phoneNumber")
             } catch (e: NumberFormatException) {
                 Log.e(TAG, "Invalid amount format: $amountParam", e)
             } catch (e: Exception) {
@@ -245,12 +254,17 @@ class MainActivity :
     }
 
     /**
-     * Callback function called to start a payment by the [PaymentFragment]
+     * Callback function called to start a payment by the [PaymentFragment].
+     * Payment is only allowed when terminal reader is connected.
      */
     override fun onRequestPayment(
         amount: Long,
         currency: String,
     ) {
+        if (Terminal.getInstance().connectionStatus != ConnectionStatus.CONNECTED) {
+            Toast.makeText(this, R.string.reader_not_connected_wait, Toast.LENGTH_SHORT).show()
+            return
+        }
         navigateTo(
                 EventFragment.TAG,
             EventFragment.requestPayment(
@@ -437,6 +451,9 @@ class MainActivity :
         } catch (e: TerminalException) {
             throw RuntimeException(e)
         }
+
+        // Sync connection status so Pay is only enabled when connected
+        ConnectionStatusHolder.setStatus(Terminal.getInstance().connectionStatus)
 
         // Check if deep link exists and reader is already connected
         val connectionStatus = Terminal.getInstance().connectionStatus

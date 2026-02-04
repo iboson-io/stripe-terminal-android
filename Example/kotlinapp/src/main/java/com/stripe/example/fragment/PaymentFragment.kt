@@ -8,9 +8,12 @@ import android.widget.EditText
 import android.widget.TextView
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
+import com.google.android.material.button.MaterialButton
+import com.stripe.example.ConnectionStatusHolder
 import com.stripe.example.MainActivity
 import com.stripe.example.NavigationListener
 import com.stripe.example.R
+import com.stripe.stripeterminal.external.models.ConnectionStatus
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -59,12 +62,23 @@ class PaymentFragment : Fragment() {
             }
         }
 
-        view.findViewById<View>(R.id.collect_payment_button).setOnClickListener {
+        val collectPaymentButton = view.findViewById<MaterialButton>(R.id.collect_payment_button)
+        collectPaymentButton.setOnClickListener {
+            if (!ConnectionStatusHolder.isConnected) return@setOnClickListener
             (activity as? NavigationListener)?.onRequestPayment(
                 amountEditText.text.toString().toLong(),
                 currentEditText.text.toString(),
             )
         }
+
+        // Enable Pay only when terminal is connected; disable when disconnected
+        ConnectionStatusHolder.connectionStatus.observe(viewLifecycleOwner) { status ->
+            val connected = status == ConnectionStatus.CONNECTED
+            collectPaymentButton.isEnabled = connected
+            collectPaymentButton.alpha = if (connected) 1f else 0.5f
+        }
+        collectPaymentButton.isEnabled = ConnectionStatusHolder.isConnected
+        collectPaymentButton.alpha = if (ConnectionStatusHolder.isConnected) 1f else 0.5f
 
         view.findViewById<View>(R.id.home_button).setOnClickListener {
             (activity as? NavigationListener)?.onRequestExitWorkflow()

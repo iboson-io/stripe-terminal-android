@@ -104,4 +104,6 @@
     <string name="payment_complete_message">Payment has been processed successfully. You can now return to the web app.</string>
     <string name="refresh">Refresh</string>
     <string name="please_tap_your_card">Please tap your card</string>
+    <string name="reader_not_connected_wait">Please wait for the reader to connect.</string>
+    <string name="reader_disconnected">Reader disconnected</string>
 </resources>

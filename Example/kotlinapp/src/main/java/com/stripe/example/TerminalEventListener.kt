@@ -8,11 +8,13 @@ import com.stripe.stripeterminal.external.models.PaymentStatus
 /**
  * The `TerminalEventListener` implements the [TerminalListener] interface and will
  * forward along any events to other parts of the app that register for updates.
+ * Connection status is pushed to [ConnectionStatusHolder] so Pay can be enabled only when connected.
  */
 object TerminalEventListener : TerminalListener {
 
     override fun onConnectionStatusChange(status: ConnectionStatus) {
         Log.i("ConnectionStatusChange", status.toString())
+        ConnectionStatusHolder.setStatus(status)
     }
 
     override fun onPaymentStatusChange(status: PaymentStatus) {
