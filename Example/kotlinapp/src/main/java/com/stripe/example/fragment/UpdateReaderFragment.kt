@@ -18,6 +18,7 @@ import com.stripe.stripeterminal.external.callable.MobileReaderListener
 import com.stripe.stripeterminal.external.models.Reader
 import com.stripe.stripeterminal.external.models.ReaderSoftwareUpdate
 import com.stripe.stripeterminal.external.models.TerminalException
+import androidx.core.content.ContextCompat
 import java.lang.ref.WeakReference
 
 /**
@@ -72,6 +73,16 @@ class UpdateReaderFragment : Fragment(), MobileReaderListener {
             }) ?: run {
                 exitWorkflow(activityRef)
             }
+        }
+
+        // Update button text and color from ViewModel LiveData (avoids data-binding accessor issue with LiveData<Int>)
+        viewModel.checkForUpdateButtonText.observe(viewLifecycleOwner) { resId ->
+            binding.checkForUpdateButton.setText(resId ?: R.string.check_for_update)
+        }
+        viewModel.checkForUpdateButtonColor.observe(viewLifecycleOwner) { colorResId ->
+            binding.checkForUpdateButton.setTextColor(
+                ContextCompat.getColor(requireContext(), colorResId ?: R.color.colorAccent)
+            )
         }
 
         // We overload the "check_for_update_button" for multiple uses
