@@ -119,6 +119,7 @@ object ApiClient {
         packageId: String?,
         vehicleId: String?,
         source: String?,
+        publicOrderId: String?,
         callback: Callback<PaymentIntentCreationResponse>
     ) {
         val createPaymentIntentParams = buildMap<String, String> {
@@ -139,6 +140,7 @@ object ApiClient {
             vehicleId?.let { put("metadata[vehicle_id]", it) }
             // Use source from deep link (e.g. saas, lpr); fallback to "lpr" when not provided
             put("metadata[source]", source?.takeIf { it.isNotBlank() } ?: "lpr")
+            publicOrderId?.let { put("metadata[public_order_id]", it) }
         }
 
         Log.d(TAG, "Creating PaymentIntent with params: $createPaymentIntentParams")

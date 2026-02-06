@@ -57,6 +57,7 @@ class MainActivity :
         var deepLinkVehicleId: String? = null
         var deepLinkSource: String? = null
         var deepLinkPhoneNumber: String? = null
+        var deepLinkPublicOrderId: String? = null
         
         fun clearDeepLinkData() {
             deepLinkAmount = null
@@ -73,6 +74,7 @@ class MainActivity :
             deepLinkVehicleId = null
             deepLinkSource = null
             deepLinkPhoneNumber = null
+            deepLinkPublicOrderId = null
         }
     }
 
@@ -164,6 +166,7 @@ class MainActivity :
             val vehicleId = data.getQueryParameter("vehicle_id")
             val source = data.getQueryParameter("source")
             val phoneNumber = data.getQueryParameter("phoneNumber")
+            val publicOrderId = data.getQueryParameter("public_order_id")
 
             try {
                 val amountDecimal = amountParam.toDouble()
@@ -187,10 +190,11 @@ class MainActivity :
                 deepLinkVehicleId = vehicleId
                 deepLinkSource = source
                 deepLinkPhoneNumber = phoneNumber
+                deepLinkPublicOrderId = publicOrderId
 
                 Log.d(TAG, "Amount: $amountParam ($amountInCents cents), Currency: $deepLinkCurrency")
                 Log.d(TAG, "CustomerId: $customerId, OrderId: $orderId, LocationId: $locationId, Email: $email, Id: $id")
-                Log.d(TAG, "AdminUserId: $adminUserId, WashType: $washType, PackageId: $packageId, VehicleId: $vehicleId, Source: $source, PhoneNumber: $phoneNumber")
+                Log.d(TAG, "AdminUserId: $adminUserId, WashType: $washType, PackageId: $packageId, VehicleId: $vehicleId, Source: $source, PhoneNumber: $phoneNumber, PublicOrderId: $publicOrderId")
             } catch (e: NumberFormatException) {
                 Log.e(TAG, "Invalid amount format: $amountParam", e)
             } catch (e: Exception) {

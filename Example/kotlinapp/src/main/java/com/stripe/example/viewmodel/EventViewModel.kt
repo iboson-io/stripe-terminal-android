@@ -153,6 +153,7 @@ class EventViewModel(eventsList: List<Event> = mutableListOf()) : ViewModel() {
             packageId = MainActivity.deepLinkPackageId,
             vehicleId = MainActivity.deepLinkVehicleId,
             source = MainActivity.deepLinkSource,
+            publicOrderId = MainActivity.deepLinkPublicOrderId,
             callback = object : Callback<PaymentIntentCreationResponse> {
                 override fun onResponse(
                     call: Call<PaymentIntentCreationResponse>,
