@@ -5,13 +5,17 @@ import com.stripe.example.BuildConfig
 import com.stripe.example.MainActivity
 import com.stripe.example.model.PaymentIntentCreationResponse
 import com.stripe.stripeterminal.external.models.ConnectionTokenException
+import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.OkHttpClient
+import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 /**
  * The `ApiClient` is a singleton object used to make calls to our backend and return their results
@@ -19,6 +23,7 @@ import java.util.concurrent.TimeUnit
 object ApiClient {
 
     private const val TAG = "ApiClient"
+    private const val PAYMENT_MODE = "terminal"
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
@@ -103,10 +108,11 @@ object ApiClient {
     }
 
     /**
-     * Create a PaymentIntent on the backend with all metadata from deep link.
-     * The backend creates the PaymentIntent and returns the client secret.
+     * Suspend version of createPaymentIntent — wraps the Retrofit call in a cancellable coroutine.
+     * This is properly cancelled when the calling ViewModel's scope is cancelled (e.g. Fragment
+     * replaced), preventing stale backend calls from completing and polluting a new payment session.
      */
-    internal fun createPaymentIntent(
+    internal suspend fun createPaymentIntentSuspend(
         amount: Long,
         currency: String,
         customerId: String?,
@@ -120,30 +126,52 @@ object ApiClient {
         vehicleId: String?,
         source: String?,
         publicOrderId: String?,
-        callback: Callback<PaymentIntentCreationResponse>
-    ) {
-        val createPaymentIntentParams = buildMap<String, String> {
+        stripeAccountId: String?
+    ): PaymentIntentCreationResponse = suspendCancellableCoroutine { cont ->
+        val params = buildMap<String, String> {
             put("amount", amount.toString())
             put("currency", currency)
-            
-            // Add email as top-level parameter
             email?.let { put("email", it) }
-            
-            // Add metadata to payment intent
             customerId?.let { put("metadata[customer_id]", it) }
-            // Use id value for order_id metadata key
             id?.let { put("metadata[order_id]", it) }
             locationId?.let { put("metadata[location_id]", it) }
             adminUserId?.let { put("metadata[admin_user_id]", it) }
             washType?.let { put("metadata[wash_type]", it) }
             packageId?.let { put("metadata[package_id]", it) }
             vehicleId?.let { put("metadata[vehicle_id]", it) }
-            // Use source from deep link (e.g. saas, lpr); fallback to "lpr" when not provided
             put("metadata[source]", source?.takeIf { it.isNotBlank() } ?: "lpr")
             publicOrderId?.let { put("metadata[public_order_id]", it) }
+            put("metadata[paymentMode]", PAYMENT_MODE)
+            stripeAccountId?.let { put("stripe_account_id", it) }
         }
-
-        Log.d(TAG, "Creating PaymentIntent with params: $createPaymentIntentParams")
-        service.createPaymentIntent(createPaymentIntentParams).enqueue(callback)
+        Log.d(TAG, "Creating PaymentIntent (suspend) with params: $params")
+        val call = service.createPaymentIntent(params)
+        // Cancel the HTTP call when the coroutine is cancelled (e.g. ViewModel cleared)
+        cont.invokeOnCancellation { call.cancel() }
+        call.enqueue(object : Callback<PaymentIntentCreationResponse> {
+            override fun onResponse(
+                call: Call<PaymentIntentCreationResponse>,
+                response: Response<PaymentIntentCreationResponse>
+            ) {
+                if (!cont.isActive) return
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    if (body != null) {
+                        cont.resume(body)
+                    } else {
+                        cont.resumeWithException(Exception("Empty response from server"))
+                    }
+                } else {
+                    val errorBody = response.errorBody()?.string()
+                    cont.resumeWithException(
+                        Exception("HTTP ${response.code()}: ${response.message()} — $errorBody")
+                    )
+                }
+            }
+            override fun onFailure(call: Call<PaymentIntentCreationResponse>, t: Throwable) {
+                if (!cont.isActive) return
+                cont.resumeWithException(t)
+            }
+        })
     }
 }

@@ -43,6 +43,8 @@ class DiscoveryViewModel(
     private var discoveryJob: Job? = null
     private var timeoutJob: Job? = null
     private val discoveryJobs = mutableListOf<Job>()
+    // Tracks an in-flight stopDiscovery coroutine so rapid Refresh taps don't spawn multiple ones
+    private var stopDiscoveryJob: Job? = null
     
     companion object {
         private const val DISCOVERY_TIMEOUT_MS = 15000L // 15 seconds timeout
@@ -67,7 +69,8 @@ class DiscoveryViewModel(
     fun startDiscovery(onFailure: () -> Unit) {
         // Reset timeout state
         isDiscoveryTimedOut.postValue(false)
-        
+        com.stripe.example.PaymentLogger.startStep("bt_discovery")
+
         // Create discovery job first
         val newDiscoveryJob = viewModelScope.launch {
             Terminal.getInstance().discoverReaders(config = discoveryConfig)
@@ -76,23 +79,31 @@ class DiscoveryViewModel(
                         // Ignore cancellations (including timeout cancellations)
                         return@catch
                     }
+                    com.stripe.example.PaymentLogger.endStep("bt_discovery", false, "error: ${e.message}")
                     onFailure()
                 }
                 .collect { discoveredReaders: List<Reader> ->
                     // Cancel timeout when readers are found
                     timeoutJob?.cancel()
                     isDiscoveryTimedOut.postValue(false)
-                    readers.postValue(
-                        discoveredReaders.filter { it.networkStatus != Reader.NetworkStatus.OFFLINE }
-                    )
+                    val visible = discoveredReaders.filter { it.networkStatus != Reader.NetworkStatus.OFFLINE }
+                    if (visible.isNotEmpty()) {
+                        com.stripe.example.PaymentLogger.endStep(
+                            "bt_discovery", true, "${visible.size} reader(s) found"
+                        )
+                    }
+                    readers.postValue(visible)
                 }
         }
-        
+
         // Start timeout job
         val newTimeoutJob = viewModelScope.launch {
             delay(DISCOVERY_TIMEOUT_MS)
             // Stop discovery when timeout occurs
             newDiscoveryJob.cancel("Discovery timeout")
+            com.stripe.example.PaymentLogger.endStep(
+                "bt_discovery", false, "timeout after ${DISCOVERY_TIMEOUT_MS}ms"
+            )
             isDiscoveryTimedOut.postValue(true)
         }
         
@@ -102,7 +113,10 @@ class DiscoveryViewModel(
         discoveryJobs.add(newTimeoutJob)
     }
     fun stopDiscovery(onSuccess: () -> Unit = { }) {
-        viewModelScope.launch {
+        // Cancel any previous stop that is still waiting on joinAll so that rapid
+        // Refresh taps cannot spawn multiple concurrent discovery sessions.
+        stopDiscoveryJob?.cancel()
+        stopDiscoveryJob = viewModelScope.launch {
             discoveryJobs.forEach { it.cancel("Stopping discovery") }
             discoveryJobs.joinAll()
             discoveryJobs.clear()

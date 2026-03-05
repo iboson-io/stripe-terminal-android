@@ -1,29 +1,38 @@
 package com.stripe.example.fragment.event
 
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.core.os.BundleCompat
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProvider
 import com.airbnb.lottie.LottieAnimationView
+import com.stripe.example.ConnectionStatusHolder
 import com.stripe.example.NavigationListener
 import com.stripe.example.R
+import com.stripe.example.TerminalOfflineListener
 import com.stripe.example.TerminalRepository
 import com.stripe.example.databinding.FragmentEventBinding
+import com.stripe.example.fragment.launchAndRepeatWithViewLifecycle
 import com.stripe.example.model.Event
 import com.stripe.example.viewmodel.EventViewModel
+import com.stripe.stripeterminal.Terminal
 import com.stripe.stripeterminal.external.callable.MobileReaderListener
 import com.stripe.stripeterminal.external.models.AllowRedisplay
 import com.stripe.stripeterminal.external.models.CardPresentParameters
 import com.stripe.stripeterminal.external.models.CollectPaymentIntentConfiguration
 import com.stripe.stripeterminal.external.models.CollectSetupIntentConfiguration
 import com.stripe.stripeterminal.external.models.ConfirmPaymentIntentConfiguration
+import com.stripe.stripeterminal.external.models.ConnectionStatus
 import com.stripe.stripeterminal.external.models.CreateConfiguration
 import com.stripe.stripeterminal.external.models.DisconnectReason
+import com.stripe.stripeterminal.external.models.NetworkStatus
 import com.stripe.stripeterminal.external.models.PaymentIntentParameters
 import com.stripe.stripeterminal.external.models.PaymentMethodOptionsParameters
 import com.stripe.stripeterminal.external.models.PaymentMethodType
@@ -32,6 +41,7 @@ import com.stripe.stripeterminal.external.models.ReaderInputOptions
 import com.stripe.stripeterminal.external.models.SetupIntentParameters
 import java.lang.ref.WeakReference
 import java.util.Locale
+import kotlinx.coroutines.flow.collectLatest
 
 /**
  * The `EventFragment` displays events as they happen during a payment flow
@@ -207,6 +217,8 @@ class EventFragment : Fragment(), MobileReaderListener {
             viewModel.displayCurrency.value = currency
         }
 
+        setupConnectionStatusBar(view)
+
         // Observe payment completion and automatically close app
         viewModel.isComplete.observe(viewLifecycleOwner) { isComplete ->
             if (isComplete && !completionDialogShown) {
@@ -218,6 +230,73 @@ class EventFragment : Fragment(), MobileReaderListener {
                 }, 1000) // 1 second delay to show final status
             }
         }
+    }
+
+    /**
+     * Wires up the live status bar at the top of the payment screen.
+     *
+     * LEFT  — M2 reader: serial number + BT connection state (green / orange / red dot)
+     * RIGHT — Stripe:    internet/Stripe network state (green / orange / red dot)
+     *
+     * Both update in real-time so you can see immediately if the reader drops or
+     * Stripe becomes unreachable during a payment.
+     */
+    private fun setupConnectionStatusBar(view: View) {
+        val readerDot         = view.findViewById<View>(R.id.reader_dot)
+        val readerNameText    = view.findViewById<TextView>(R.id.reader_name_text)
+        val readerStatusLabel = view.findViewById<TextView>(R.id.reader_status_label)
+        val stripeDot         = view.findViewById<View>(R.id.stripe_dot)
+        val stripeStatusLabel = view.findViewById<TextView>(R.id.stripe_status_label)
+
+        // ── Reader (M2 Bluetooth) connection status ────────────────────────────
+        ConnectionStatusHolder.connectionStatus.observe(viewLifecycleOwner) { status ->
+            when (status) {
+                ConnectionStatus.CONNECTED -> {
+                    val serial = Terminal.getInstance().connectedReader?.serialNumber?.takeLast(6)
+                    readerNameText.text = if (!serial.isNullOrEmpty()) "M2 · $serial" else "M2 Reader"
+                    readerStatusLabel.text = getString(R.string.status_connected)
+                    applyStatusColor(readerDot, readerStatusLabel, R.color.statusGreen)
+                }
+                ConnectionStatus.CONNECTING -> {
+                    readerNameText.text = "M2 Reader"
+                    readerStatusLabel.text = getString(R.string.status_connecting)
+                    applyStatusColor(readerDot, readerStatusLabel, R.color.statusOrange)
+                }
+                ConnectionStatus.NOT_CONNECTED -> {
+                    readerNameText.text = getString(R.string.status_no_reader)
+                    readerStatusLabel.text = getString(R.string.status_disconnected)
+                    applyStatusColor(readerDot, readerStatusLabel, R.color.statusRed)
+                }
+                else -> {
+                    readerNameText.text = "M2 Reader"
+                    readerStatusLabel.text = status.toString()
+                    applyStatusColor(readerDot, readerStatusLabel, R.color.statusOrange)
+                }
+            }
+        }
+
+        // ── Stripe network status ──────────────────────────────────────────────
+        launchAndRepeatWithViewLifecycle {
+            TerminalOfflineListener.offlineStatus.collectLatest { networkStatus ->
+                val (label, colorRes) = when (networkStatus) {
+                    NetworkStatus.ONLINE  -> getString(R.string.status_online)  to R.color.statusGreen
+                    NetworkStatus.OFFLINE -> getString(R.string.status_offline) to R.color.statusRed
+                    NetworkStatus.UNKNOWN -> getString(R.string.status_checking) to R.color.statusOrange
+                }
+                stripeStatusLabel.text = label
+                applyStatusColor(stripeDot, stripeStatusLabel, colorRes)
+            }
+        }
+    }
+
+    /** Paints the status dot and label text with the same colour. */
+    private fun applyStatusColor(dot: View, label: TextView, colorRes: Int) {
+        val color = ContextCompat.getColor(requireContext(), colorRes)
+        dot.background = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(color)
+        }
+        label.setTextColor(color)
     }
     
     private fun closeApp() {

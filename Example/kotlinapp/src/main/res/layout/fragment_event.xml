@@ -37,6 +37,94 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <!-- Live connection status bar — reader BT status + Stripe network status -->
+        <LinearLayout
+            android:id="@+id/connection_status_bar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@color/backgroundLightGray"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:gravity="center_vertical"
+            app:layout_constraintTop_toBottomOf="@id/header_title"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <!-- Reader dot -->
+            <View
+                android:id="@+id/reader_dot"
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:layout_marginEnd="8dp" />
+
+            <!-- Reader name + BT connection status -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/reader_name_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="M2 Reader"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/textPrimary" />
+
+                <TextView
+                    android:id="@+id/reader_status_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="—"
+                    android:textSize="11sp"
+                    android:textColor="@color/textSecondary" />
+            </LinearLayout>
+
+            <!-- Vertical divider -->
+            <View
+                android:layout_width="1dp"
+                android:layout_height="32dp"
+                android:background="@color/textTertiary"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp" />
+
+            <!-- Stripe dot -->
+            <View
+                android:id="@+id/stripe_dot"
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:layout_marginEnd="8dp" />
+
+            <!-- Stripe network status -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Stripe"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/textPrimary" />
+
+                <TextView
+                    android:id="@+id/stripe_status_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="—"
+                    android:textSize="11sp"
+                    android:textColor="@color/textSecondary" />
+            </LinearLayout>
+
+        </LinearLayout>
+
         <!-- Amount Display - Large and Centered -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/amount_display_layout"
@@ -45,7 +133,7 @@
             android:paddingTop="24dp"
             android:paddingBottom="32dp"
             android:visibility="@{viewModel.displayAmount != null &amp;&amp; viewModel.displayAmount.length() > 0 ? View.VISIBLE : View.GONE}"
-            app:layout_constraintTop_toBottomOf="@id/header_title"
+            app:layout_constraintTop_toBottomOf="@id/connection_status_bar"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
 

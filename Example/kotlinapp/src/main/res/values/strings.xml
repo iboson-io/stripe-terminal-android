@@ -106,4 +106,16 @@
     <string name="please_tap_your_card">Please tap your card</string>
     <string name="reader_not_connected_wait">Please wait for the reader to connect.</string>
     <string name="reader_disconnected">Reader disconnected</string>
+    <string name="disconnecting">Disconnecting…</string>
+    <string name="disconnect_failed_retry">Disconnect failed — tap to retry</string>
+    <string name="disconnect_failed_message">Disconnect failed: %1$s</string>
+
+    <!-- Connection status bar labels -->
+    <string name="status_connected">Connected</string>
+    <string name="status_connecting">Connecting…</string>
+    <string name="status_disconnected">Disconnected</string>
+    <string name="status_no_reader">No Reader</string>
+    <string name="status_online">Online</string>
+    <string name="status_offline">Offline</string>
+    <string name="status_checking">Checking…</string>
 </resources>

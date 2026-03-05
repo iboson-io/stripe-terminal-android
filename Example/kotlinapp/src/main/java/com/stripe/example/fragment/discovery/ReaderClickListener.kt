@@ -42,11 +42,13 @@ class ReaderClickListener(
                 ConnectionConfiguration.BluetoothConnectionConfiguration(
                     locationId = connectLocationId,
                     bluetoothReaderListener = activity,
+                    autoReconnectOnUnexpectedDisconnect = true,
                 )
 
             DiscoveryMethod.USB -> ConnectionConfiguration.UsbConnectionConfiguration(
                 locationId = connectLocationId,
                 usbReaderListener = activity,
+                autoReconnectOnUnexpectedDisconnect = true,
             )
         }
 
@@ -55,6 +57,7 @@ class ReaderClickListener(
         // Use id or serialNumber as unique identifier
         val readerId = reader.id ?: reader.serialNumber
 
+        com.stripe.example.PaymentLogger.startStep("bt_connect")
         viewModel.viewModelScope.launch {
             // Set the connecting reader ID to show spinner next to this reader
             viewModelRef.get()?.connectingReaderId?.postValue(readerId)
@@ -67,7 +70,17 @@ class ReaderClickListener(
                 val viewModel = viewModelRef.get() ?: return@withContext
 
                 if (result.isSuccess) {
+                    com.stripe.example.PaymentLogger.endStep("bt_connect", true)
                     viewModel.connectingReaderId.value = null
+                    // Persist reader info so auto-reconnect can identify the same reader
+                    com.stripe.example.ReaderPreferences.saveReaderInfo(
+                        context = activity,
+                        readerId = reader.id ?: reader.serialNumber ?: "",
+                        readerSerial = reader.serialNumber,
+                        discoveryMethod = viewModel.discoveryMethod,
+                        locationId = connectLocationId,
+                        deviceType = reader.deviceType?.name,
+                    )
                     activity.onConnectReader()
                     viewModel.isUpdating.value = false
                     viewModel.isConnecting.value = false
@@ -79,6 +92,7 @@ class ReaderClickListener(
                     } else {
                         "Failed to connect to reader"
                     }
+                    com.stripe.example.PaymentLogger.endStep("bt_connect", false, errorMessage)
                     Toast.makeText(
                         activity,
                         errorMessage,

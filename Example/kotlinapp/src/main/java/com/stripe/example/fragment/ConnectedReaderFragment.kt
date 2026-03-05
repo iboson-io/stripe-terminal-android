@@ -4,7 +4,9 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import com.stripe.example.NavigationListener
@@ -50,20 +52,46 @@ class ConnectedReaderFragment : Fragment() {
 
         // Set up the disconnect button
         val activityRef = WeakReference(activity)
-        view.findViewById<View>(R.id.disconnect_button).setOnClickListener {
+        val fragmentRef = WeakReference(this)
+        val disconnectButton = view.findViewById<Button>(R.id.disconnect_button)
+        val readerDescription = view.findViewById<TextView>(R.id.reader_description)
+
+        disconnectButton.setOnClickListener {
+            // Disable button immediately to prevent double-taps and show progress
+            disconnectButton.isEnabled = false
+            readerDescription.text = getString(R.string.disconnecting)
+
             Terminal.getInstance().disconnectReader(object : Callback {
 
                 override fun onSuccess() {
-                    activityRef.get()?.let {
-                        if (it is NavigationListener) {
-                            it.runOnUiThread {
-                                it.onDisconnectReader()
-                            }
+                    activityRef.get()?.let { act ->
+                        if (act is NavigationListener) {
+                            act.runOnUiThread { act.onDisconnectReader() }
                         }
                     }
                 }
 
                 override fun onFailure(e: TerminalException) {
+                    // Re-enable the button and restore reader description so the user can retry
+                    activityRef.get()?.runOnUiThread {
+                        disconnectButton.isEnabled = true
+                        Terminal.getInstance().connectedReader?.let { reader ->
+                            fragmentRef.get()?.let { frag ->
+                                readerDescription.text = frag.getString(
+                                    R.string.reader_description,
+                                    reader.deviceType,
+                                    reader.serialNumber,
+                                )
+                            }
+                        } ?: run {
+                            readerDescription.text = getString(R.string.disconnect_failed_retry)
+                        }
+                        Toast.makeText(
+                            activityRef.get(),
+                            getString(R.string.disconnect_failed_message, e.errorMessage ?: "unknown error"),
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
                 }
             })
         }

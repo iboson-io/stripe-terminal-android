@@ -21,6 +21,7 @@
     <color name="statusBlue">#3B82F6</color>
     <color name="statusPurple">#8B5CF6</color>
     <color name="statusOrange">#F59E0B</color>
+    <color name="statusRed">#EF4444</color>
     
     <!-- Device/Reader Colors -->
     <color name="deviceHighlight">#3B82F6</color>

@@ -5,6 +5,8 @@ plugins {
     id("kotlin-android")
     id("org.jetbrains.kotlin.plugin.parcelize")
     id("kotlin-kapt")
+    id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 android {
@@ -13,6 +15,22 @@ android {
 
     namespace = "com.stripe.example"
     compileSdk = latestSdkVersion
+
+    // Ensure every built APK is signed so it installs when transferred (not just via USB).
+    // Release uses debug keystore for sideload builds; use your own keystore for production.
+    signingConfigs {
+        getByName("debug") { /* default */ }
+        create("release") {
+            val home = System.getProperty("user.home")
+            val debugKeystore = file("$home/.android/debug.keystore")
+            if (debugKeystore.exists()) {
+                storeFile = debugKeystore
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
+        }
+    }
 
     defaultConfig {
         minSdk = minSdkVersion
@@ -26,10 +44,18 @@ android {
         
         val useSimulatedReader = project.property("USE_SIMULATED_READER").toString().trim('"').toBoolean()
         buildConfigField("boolean", "USE_SIMULATED_READER", useSimulatedReader.toString())
+
+        val carwashApiUrl = project.property("CARWASH_API_URL").toString().trim('"')
+        buildConfigField("String", "CARWASH_API_URL", "\"$carwashApiUrl\"")
+
     }
 
     buildTypes {
         release {
+            val debugKeystore = file("${System.getProperty("user.home")}/.android/debug.keystore")
+            if (debugKeystore.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isShrinkResources = true
             isMinifyEnabled = true
         }
@@ -61,7 +87,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KaptGenerateStubs>().configureE
 }
 
 val androidxLifecycleVersion = "2.6.2"
-val kotlinCoroutinesVersion = "1.7.3"
+val kotlinCoroutinesVersion = "1.9.0"
 val retrofitVersion = "2.11.0"
 val stripeTerminalVersion = "5.1.1"
 
@@ -95,7 +121,16 @@ dependencies {
     
     // Lottie animation
     implementation("com.airbnb.android:lottie:6.1.0")
-    
+
+    // Timber logging
+    implementation("com.jakewharton.timber:timber:5.0.1")
+
+    // Firebase (BOM manages all versions)
+    implementation(platform("com.google.firebase:firebase-bom:34.2.0"))
+    implementation("com.google.firebase:firebase-database")
+    implementation("com.google.firebase:firebase-crashlytics")
+    implementation("com.google.firebase:firebase-analytics")
+
     // Leak canary
     debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
 }
